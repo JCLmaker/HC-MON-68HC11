@@ -1,3 +1,5 @@
+**HC-MON 68HC11**
+
 This project is an advance embedded OS for the 68HC11 processor to debug assembler programs live on the chip.
 
 It all started in the started during my studies in the late 80th at the “Fachhochschule der Deutschen Bundespost Berlin”.
@@ -6,7 +8,7 @@ Inspired by initial experiments with an SBC featuring the HD63701 and software r
 
 The further development was named “HC-MON” and completed in the present version 1.1 in April 1991 in Dublin, Ireland.
 
-Main features of this OS are:
+**Main features of this OS are:**
 
 -	Uploading user programs as Motorola s-records
 -	Copy an edit data as needed
