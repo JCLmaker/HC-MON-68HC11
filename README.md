@@ -15,3 +15,6 @@ The further development was named “HC-MON” and completed in the present vers
 -	Monitor registers
 -	Start, trace and single step user programs
 -	Disassemble user programs 
+
+(decs/pic main screen.png)
+
