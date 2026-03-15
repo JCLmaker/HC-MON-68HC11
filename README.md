@@ -16,5 +16,5 @@ The further development was named “HC-MON” and completed in the present vers
 -	Start, trace and single step user programs
 -	Disassemble user programs 
 
-![](main_screen.png)
+![](docs/pic/main_screen.png)
 
