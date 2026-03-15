@@ -1,0 +1,21 @@
+        .list
+        .file
+        .title  2.2.2. Addition von Worten & Bytes
+;********************************************
+;  24-Bit Addition
+;********************************************
+
+zahl1   .equ    $3000           ; h”chstes Byte der Zahl1
+zahl2   .equ    $3010           ; h”chstes Byte der Zahl2
+summe   .equ    $3020           ; h”chstes Byte der Summe
+
+start   ldd     zahl1+1         ; addiere 2 Byte auf einmal
+        addd    zahl2+1         ; im Doppelakku D
+        std     summe+1         ; 1. Teilergebnis (16 Bit) speichern
+        ldaa    zahl1           ; h”chstes Byte bearbeiten
+        adca    zahl2           ; šbertrag mit addieren !
+        staa    summe           ; 2. Teilergebnis (8 Bit) speichern
+        swi                     ; Programmende
+
+        .end
+

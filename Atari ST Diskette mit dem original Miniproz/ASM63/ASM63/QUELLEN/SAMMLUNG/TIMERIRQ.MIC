@@ -1,0 +1,39 @@
+        .list
+        .file
+        .title  4.2. Programmgerst fr Timer-Interrupt-Technik
+        .incl   miniproz
+        .incl   konstant
+
+tics    .equ    1843            ; 1.5ms Intervall bei f=1.2288 MHz
+
+; Initialisierung des Timers
+
+init    ldaa    #jmp            ; Opcode fr JMP-Befehl laden
+        staa    jocf            ; und an Interrupt-Sprungleiste speichern
+        ldx     #timer          ; Adresse der eigenen Interrupt-Routine
+        stx     jocf+1          ; in Interrupt-Sprungleiste speichern
+        ldd     timerh          ; aktuellen Z„hlerstand laden
+        addd    #tics           ; und Intervall addieren
+        std     ocrh            ; Timer programmieren
+        oim     #%00001000,tcsr ; Timer-Interrupt freigeben
+        cli                     ; CPU reagiert auf Interrupts
+        rts
+
+;********************************************
+;  Interrupt-Routine
+;********************************************
+
+timer   ldaa    tcsr            ; OCF-Bit l”schen
+        ldd     ocrh            ; Programmieren des
+        addd    #tics           ; n„chsten Timer-
+        std     ocrh            ; intervalls
+;
+;  Hier steht das Programmsegment, da alle 1.5ms periodisch
+;  aufgerufen wird. Wenn die Interruptroutine unterbrechbar
+;  sein soll, mu hier der Befehl "CLI" stehen. Das Programm-
+;  segment darf dann aber nicht l„nger als 1.5ms laufen !!!
+;
+        rti
+
+        .end
+

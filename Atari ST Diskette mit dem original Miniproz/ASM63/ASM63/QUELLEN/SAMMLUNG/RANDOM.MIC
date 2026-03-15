@@ -1,0 +1,45 @@
+        .list
+        .file
+        .title  5.3. Reproduzierbarer Zufallszahlen-Generator
+        .incl   miniproz
+        .incl   konstant
+
+start   clrb                    ; Sequenz-ZÑhler lîschen
+        ldaa    #-1             ; Anfangswert fÅr den Zufallsgenerator
+        jsr     prcrlf          ; neue Zeile anfangen
+2$      bsr     rand            ; Zufallswert erzeugen
+        psha                    ; Zufallswert retten
+        jsr     outhex          ; Hex-Wert ausgeben
+        jsr     prspac          ; und einen Zwischenraum erzeugen
+        incb                    ; Durchlauf zÑhlen
+        bitb    #$F             ; schon 16 Werte in einer Zeile?
+        bne     1$              ; nein...
+        jsr     prcrlf          ; neue Zeile anfangen
+1$      pula                    ; letzten Zufallswert wieder laden
+        cmpb    #217            ; schon alle Werte erzeugt?
+        bne     2$              ; nein...
+        swi                     ; ja, Programmende
+
+;*************************************************************
+;  RAND erzeugt eine Sequenz mit 217 Zufallswerten in Akku A
+;
+;  Parameter:  A = Startwert oder letzte Zufallszahl
+;   RÅckgabe:  A = neue Zufallszahl
+;  VerÑndert:  F,A
+;  UP-Aufruf:
+
+rand    pshx                    ; rette X-Register
+        psha                    ; rette letzten Zufallswert
+        rora
+        rora
+        rora
+        tsx                     ; SP zum Zugriff auf den Stack laden
+        eora    0,x             ; EXOR mit letzten Zufallswert erzeugen
+        rora                    ; im Carry ein Zufallsbit erzeugen
+        pula                    ; hole letzten Zufallswert zurÅck
+        rora                    ; bilde mit dem Carry eine neue Zufallszahl
+        pulx                    ; hole altes X-Register wieder zurÅck
+        rts 
+
+        .end
+

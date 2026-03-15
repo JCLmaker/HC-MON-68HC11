@@ -1,0 +1,41 @@
+ -----------------------------------------------------------------------
+|    p Liste der Fehlercodes des Macro-Cross-Assemblers ASM63 V2.1-A q        |
+ -----------------------------------------------------------------------
+
+         1 = Symboltabelle Åbergelaufen
+         2 = UngÅltiges Zeichen im Symbolfeld
+         3 = UngÅltiges Zeichen im Befehlsfeld
+         4 = UngÅltiges Zeichen im Operandenfeld
+         5 = Symbol nicht definiert
+         6 = Operand fehlt
+         7 = Opcode oder MACRO unbekannt
+         8 = Unbekannter Pseudo-Opcode
+         9 = Unbekannte Adressierungsart
+
+        10 = Stringende nicht gefunden
+        11 = Datei ohne .END
+        12 = Relative Sprungweite zu groû
+        13 = Symbol oder .MACRO bereits definiert
+        14 = UngÅltiges lokales Symbol
+        15 = .ELSE, ELSEIF oder .ENDIF ohne vorheriges .IF
+        16 = .IF zu tief verschachtelt
+        17 = Macroaufruf zu tief verschachtelt
+        18 = Division durch Null
+        19 = Klammerfehler im Rechenausdruck
+
+        20 = Rechenausdruck zu komplex
+        21 = Rechenausdruck unvollstÑndig
+        22 = Operator ohne Operand im Rechenausdruck
+        23 = .INCL zu tief verschachtelt
+        24 = Ende der .MACRO-Definition fehlt
+        25 = .MACRO-Definitionstabelle Åbergelaufen
+        26 = UngÅltige Symboldefinition im .MACRO
+        27 = UngÅltiger Parameter im .MACRO-Aufruf
+        28 = Fehler in Parameterliste des .MACROs
+        29 = UngÅltige .MACRO-Definition
+
+        30 = .ENDMAC ohne vorheriges .MACRO
+        31 = Includefile nicht gefunden
+        32 = Durch .ERROR selbst erzeugter Fehler
+        33 = Kein negativer Offset erlaubt im BinÑrmode
+

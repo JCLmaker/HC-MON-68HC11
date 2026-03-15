@@ -1,0 +1,64 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MUL16S.MIC     03.01.1991    12:32:44    Page: 1
+2.3.2. Schiebemultiplikation
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  2.3.2. Schiebemultiplikation
+   4  2000               
+   5  2000               mkant   .equ    $3000           ; 16 Bit Speicher
+   6  2000               mkator  .equ    $3002           ; 16 Bit Speicher
+   7  2000               prod    .equ    $3004           ; 32 Bit Ergebnisspeicher
+   8  2000               m1      .equ    132
+   9  2000               m2      .equ    379
+  10  2000               
+  11  2000   CC 00 84    start   ldd     #m1             ; Zahl1
+  12  2003   FD 30 00            std     mkant
+  13  2006   CC 01 7B            ldd     #m2             ; Zahl2
+  14  2009   FD 30 02            std     mkator
+  15  200C   8D 01               bsr     mul16s          ; Aufruf des Multiplikationsprogramms
+  16  200E   3F                  swi                     ; Programmende
+  17  200F               
+  18  200F               ;************************************************
+  19  200F               ;  MUL16S zerstîrt F,A,X, PROD = MKANT * MKATOR
+  20  200F               ;************************************************
+  21  200F               
+  22  200F   CC 00 00    mul16s  ldd     #0
+  23  2012   FD 30 06            std     prod+2          ; Ergebnisspeicher (lower Wort) lîschen
+  24  2015   CE 00 10            ldx     #16             ; ZÑhler fÅr 16 Schiebeoperationen
+  25  2018   78 30 07    2$      asl     prod+3          ; Produkt
+  26  201B   79 30 06            rol     prod+2          ; um ein Bit
+  27  201E   79 30 05            rol     prod+1          ; nach links
+  28  2021   79 30 04            rol     prod            ; schieben
+  29  2024   78 30 01            asl     mkant+1
+  30  2027   79 30 00            rol     mkant           ; hîchstes Bit gesetzt?
+  31  202A   24 13               bcc     1$              ; nein
+  32  202C   FC 30 02            ldd     mkator
+  33  202F   F3 30 06            addd    prod+2
+  34  2032   FD 30 06            std     prod+2          ; öberlauf? 
+  35  2035   24 08               bcc     1$              ; nein
+  36  2037   7C 30 05            inc     prod+1          ; öberlauf?
+  37  203A   26 03               bne     1$              ; nein
+  38  203C   7C 30 04            inc     prod
+  39  203F   09          1$      dex                     ; alle 16 Bits bearbeitet?
+  40  2040   26 D6               bne     2$
+  41  2042   39                  rts
+  42  2043               
+  43  2043                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\MUL16S.HX2
+Elapsed time: 1.7 sec.

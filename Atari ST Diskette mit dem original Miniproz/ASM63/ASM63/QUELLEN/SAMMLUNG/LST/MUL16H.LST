@@ -1,0 +1,70 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MUL16H.MIC     03.01.1991    12:32:32    Page: 1
+2.3.1. Kaskadierung von Einzelprodukten
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  2.3.1. Kaskadierung von Einzelprodukten
+   4  2000               
+   5  2000               mkant   .equ    $3000           ; 16 Bit Speicher
+   6  2000               mkator  .equ    $3002           ; 16 Bit Speicher
+   7  2000               prod    .equ    $3004           ; 32 Bit Ergebnisspeicher
+   8  2000               m1      .equ    132
+   9  2000               m2      .equ    379
+  10  2000               
+  11  2000   CC 00 84    start   ldd     #m1             ; Zahl1
+  12  2003   FD 30 00            std     mkant
+  13  2006   CC 01 7B            ldd     #m2             ; Zahl2
+  14  2009   FD 30 02            std     mkator
+  15  200C   8D 01               bsr     mul16h          ; Aufruf des Multiplikationsprogramms
+  16  200E   3F                  swi                     ; Programmende
+  17  200F               
+  18  200F               ;************************************************
+  19  200F               ;  MUL16H zerst”rt F,A,X, PROD = MKANT * MKATOR
+  20  200F               ;************************************************
+  21  200F               
+  22  200F   CC 00 00    mul16h  ldd     #0
+  23  2012   FD 30 04            std     prod            ; Ergebnisspeicher (higher Wort) l”schen
+  24  2015   B6 30 03            ldaa    mkator+1
+  25  2018   F6 30 01            ldab    mkant+1
+  26  201B   3D                  mul                     ; xxxxPPPP = xxTT * xxNN
+  27  201C   FD 30 06            std     prod+2          ; 1. Teilergebnis speichern
+  28  201F   B6 30 03            ldaa    mkator+1
+  29  2022   F6 30 00            ldab    mkant
+  30  2025   3D                  mul                     ; xxPPPPxx = xxTT * NNxx
+  31  2026   F3 30 05            addd    prod+1          ; 2. Teilergebnis
+  32  2029   FD 30 05            std     prod+1          ; addieren
+  33  202C   24 03               bcc     1$
+  34  202E   7C 30 04            inc     prod            ; šberlauf addieren
+  35  2031   B6 30 02    1$      ldaa    mkator
+  36  2034   F6 30 01            ldab    mkant+1
+  37  2037   3D                  mul                     ; xxPPPPxx = TTxx * xxNN
+  38  2038   F3 30 05            addd    prod+1          ; 3. Teilergebnis
+  39  203B   FD 30 05            std     prod+1          ; addieren
+  40  203E   24 03               bcc     2$
+  41  2040   7C 30 04            inc     prod            ; šberlauf addieren
+  42  2043   B6 30 02    2$      ldaa    mkator
+  43  2046   F6 30 00            ldab    mkant
+  44  2049   3D                  mul                     ; PPPPxxxx = TTxx * NNxx
+  45  204A   F3 30 04            addd    prod            ; 4. Teilergebnis
+  46  204D   FD 30 04            std     prod            ; addieren
+  47  2050   39                  rts
+  48  2051               
+  49  2051                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\MUL16H.HX2
+Elapsed time: 2 sec.

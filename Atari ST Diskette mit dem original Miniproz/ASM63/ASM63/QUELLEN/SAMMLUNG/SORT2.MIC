@@ -1,0 +1,45 @@
+        .list
+        .file
+        .title  5.2.2. Sortier-Algorithmus 2 fr Bytes
+
+staad   .equ    $40             ; Startadresse fr Vergleich
+endad   .equ    $42             ; Endadresse fr Vergleich
+
+start   ldx     #area           ; Speicherbereich der Elemente
+        ldab    #23             ; Anzahl-1 bergeben
+        bsr     sort2           ; Aufruf des Sortierprogramms
+        swi
+
+; SORT2 fr ein Bytefeld mit maximal 255 Eintr„gen
+
+sort2   stx     staad   ; Anfangsadresse retten
+        abx
+        stx     endad   ; Endadresse retten
+again   clrb            ; Flag l”schen -> Feld ist sortiert
+        ldx     staad   ; Anfangsadresse laden
+check   ldaa    ,x      ; Element laden
+        cmpa    1,x     ; mit n„chsten Element vergleichen
+        bhs     1$      ; -> in richtiger Lage
+        ldab    #$FF    ; Flag setzen -> Feld ist nicht sortiert
+        pshb            ; Flag retten
+        ldab    1,x     ; Elemente werden
+        staa    1,x     ; miteinander
+        stab    ,x      : vertauscht
+        pulb            ; Flag zurckladen
+1$      inx             ; n„chstes Element adressieren
+        cpx     endad   ; Ende eines Durchlaufs?
+        bne     check   ; nein...
+        tstb            ; Tausch im letzten Durchlauf?
+        bne     again   ; ja, dann nocheinmal testen...
+        rts
+
+;*****************************
+;  Einige unsortierte Zahlen
+;*****************************
+
+area    .db     34,$e3,$1f,55,67,$ff,$fe,$71
+        .db     99,%1100101,$4f,$5f,$6f,$70,$71,$71
+        .db     %11101,2,9,3,8,%10101010,$ff,0
+
+         .end
+

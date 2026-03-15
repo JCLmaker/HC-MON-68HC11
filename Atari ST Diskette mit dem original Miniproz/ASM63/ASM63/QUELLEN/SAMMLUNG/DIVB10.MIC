@@ -1,0 +1,25 @@
+        .list
+        .file
+        .title  2.4.1. Dezimale Schiebedivision
+
+start   ldab    #200            ; Dividend
+        bsr     divb10          ; Aufruf des Divisionsprogramms
+        swi                     ; Programmende
+
+;************************************************************************
+;  DIVB10 zerstîrt F,A,B,X, Dividend in B, Quotient nach B, Rest nach A
+;************************************************************************
+
+divb10  ldx     #8              ; Schiebedivision fÅr 8 Bit
+        clra                    ; higher Byte vom D-Akku lîschen
+div     asld                    ; ZÑhler 1 Bit nach links schieben
+        cmpa    #10             ; 10 enthalten?
+        bcs     1$              ; nein...
+        suba    #10             ; ja: dann abziehen
+        incb                    ;    und Quotientenbit setzen
+1$      dex                     ; alle Bits bearbeitet?
+        bne     div             ; nein...
+        rts
+
+        .end
+

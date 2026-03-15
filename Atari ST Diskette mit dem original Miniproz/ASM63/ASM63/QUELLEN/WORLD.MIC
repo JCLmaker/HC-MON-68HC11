@@ -1,0 +1,18 @@
+        .list                   ; Listing erzeugen
+        .file                   ; Listing in File schreiben
+        .incl   miniproz        ; Definition der Monitor-Unterprogramme
+        .incl   konstant        ; Definition von Konstanten
+        .symtab
+
+;********************************
+;  Das erste Programm
+;********************************
+
+start   ldx     #hallo          ; Startadresse des Textes
+        jsr     print           ; Aufruf des Ausgabeprogramms
+        swi                     ; RÅcksprung ins System
+ 
+hallo   .byte   cr,lf,lf
+        .asciz  /Hallo Welt/
+
+       .end

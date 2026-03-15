@@ -1,0 +1,28 @@
+        .list
+        .file
+        .title  3.2.1 Testprogramm A/D-Wandler
+        .incl   miniproz
+        .incl   konstant
+
+start   ldx     #hallo          ; Programmstart melden
+        jsr     print
+1$      staa    ad              ; AD-Wandler anstožen
+        ldx     #wert
+        jsr     print
+        ldaa    ad              ; gewandelten Wert abholen
+        jsr     outhex
+        bra     1$
+
+;******************************
+;  Textausgaben des Programms
+;******************************
+
+hallo   .db     cr,lf
+        .ascii  "Einlesetest am A/D-Wandler"
+        .db     cr,lf,0
+
+wert    .byte   cr
+        .asciz  "A/D-Wert = $"
+
+        .end
+

@@ -1,0 +1,27 @@
+;****************************************************************
+;       Includefile mit h„ufig ben”tigten Konstanten
+;****************************************************************
+
+
+; ALLGENMEINE KONSTANTEN:
+
+ctrl    .equ    $40     ; Control-Offset fr Steuerzeichen
+ctrlc   .equ    'C-ctrl ; Programmabbruch
+ctrlp   .equ    'P-ctrl ; Umschaltung Host/Terminal
+ctrlq   .equ    'Q-ctrl ; Ausgabe weiterlaufen lassen
+ctrls   .equ    'S-ctrl ; Ausgabe anhalten
+ctrlt   .equ    'T-ctrl ; Statusausgabe
+ctrlx   .equ    'X-ctrl ; Eingabe zurcknehmen
+ctrlz   .equ    'Z-ctrl ; Endezeichen
+space   .equ    $20     ; Zwischenraum
+bell    .equ    7       ; Terminalklingel
+bs      .equ    8       ; Rckschritt
+cr      .equ    $D      ; Wagenrcklauf
+lf      .equ    $A      ; Zeilentransport
+esc     .equ    27      ; Umschaltzeichen fr Terminal
+xon     .equ    ctrls
+xoff    .equ    ctrlq
+delete  .equ    $7F     ; L”sch-Indikator
+jmp     .equ    $7E     ; 6301-Opcode fr JMP-Befehl
+swi     .equ    $3F     ; 6301-Opcode fr SWI-Befehl
+

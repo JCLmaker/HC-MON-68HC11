@@ -1,0 +1,65 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   SORT2.MIC      03.01.1991    12:36:24    Page: 1
+5.2.2. Sortier-Algorithmus 2 fÅr Bytes
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  5.2.2. Sortier-Algorithmus 2 fÅr Bytes
+   4  2000               
+   5  2000               staad   .equ    $40             ; Startadresse fÅr Vergleich
+   6  2000               endad   .equ    $42             ; Endadresse fÅr Vergleich
+   7  2000               
+   8  2000   CE 20 29    start   ldx     #area           ; Speicherbereich der Elemente
+   9  2003   C6 17               ldab    #23             ; Anzahl-1 Åbergeben
+  10  2005   8D 01               bsr     sort2           ; Aufruf des Sortierprogramms
+  11  2007   3F                  swi
+  12  2008               
+  13  2008               ; SORT2 fÅr ein Bytefeld mit maximal 255 EintrÑgen
+  14  2008               
+  15  2008   DF 40       sort2   stx     staad   ; Anfangsadresse retten
+  16  200A   3A                  abx
+  17  200B   DF 42               stx     endad   ; Endadresse retten
+  18  200D   5F          again   clrb            ; Flag lîschen -> Feld ist sortiert
+  19  200E   DE 40               ldx     staad   ; Anfangsadresse laden
+  20  2010   A6 00       check   ldaa    ,x      ; Element laden
+  21  2012   A1 01               cmpa    1,x     ; mit nÑchsten Element vergleichen
+  22  2014   24 0A               bhs     1$      ; -> in richtiger Lage
+  23  2016   C6 FF               ldab    #$FF    ; Flag setzen -> Feld ist nicht sortiert
+  24  2018   37                  pshb            ; Flag retten
+  25  2019   E6 01               ldab    1,x     ; Elemente werden
+  26  201B   A7 01               staa    1,x     ; miteinander
+  27  201D   E7 00               stab    ,x      : vertauscht
+  28  201F   33                  pulb            ; Flag zurÅckladen
+  29  2020   08          1$      inx             ; nÑchstes Element adressieren
+  30  2021   9C 42               cpx     endad   ; Ende eines Durchlaufs?
+  31  2023   26 EB               bne     check   ; nein...
+  32  2025   5D                  tstb            ; Tausch im letzten Durchlauf?
+  33  2026   26 E5               bne     again   ; ja, dann nocheinmal testen...
+  34  2028   39                  rts
+  35  2029               
+  36  2029               ;*****************************
+  37  2029               ;  Einige unsortierte Zahlen
+  38  2029               ;*****************************
+  39  2029               
+  40  2029   22E31F37    area    .db     34,$e3,$1f,55,67,$ff,$fe,$71
+  41  2031   63654F5F            .db     99,%1100101,$4f,$5f,$6f,$70,$71,$71
+  42  2039   1D020903            .db     %11101,2,9,3,8,%10101010,$ff,0
+  43  2041               
+  44  2041                        .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\SORT2.HX2
+Elapsed time: 1.7 sec.

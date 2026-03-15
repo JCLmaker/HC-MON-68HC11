@@ -1,0 +1,83 @@
+        .list
+        .file
+        .title  3.2.3. IIR-Tiepa-Filter (Tschebbyscheff) fg=25Hz
+        .incl   miniproz
+        .incl   konstant
+
+buffer  .equ    $40             ; Zero-Page Arbeitsspeicher (2 Byte)
+input   .equ    buffer+2        ; Eingabesumme (16-Bit)
+output  .equ    input+2         ; Ausgabesumme (16-Bit)
+help    .equ    output+2        ; Hilfsregister fr Zwischenergebnisse
+tics    .equ    1229            ; 1ms Intervall bei f=1.2288 MHz
+
+; Initialisierung des Timers
+
+init    ldaa    #jmp            ; Opcode fr JMP-Befehl laden
+        staa    jocf            ; und an Interrupt-Sprungleiste speichern
+        ldx     #timer          ; Adresse der eigenen Interrupt-Routine
+        stx     jocf+1          ; in Interrupt-Sprungleiste speichern
+        ldd     timerh          ; aktuellen Z„hlerstand laden
+        addd    #tics           ; und Intervall addieren
+        std     ocrh            ; Timer programmieren
+        oim     #%00001000,tcsr ; Timer-Interrupt freigeben
+        cli                     ; CPU reagiert auf Interrupts
+        swi                     ; Sprung in den MINIPROZ
+
+;********************************************
+;  Interrupt-Routine  (138 Taktzyklen)
+;********************************************
+
+timer   ldaa    tcsr            ; OCF-Bit l”schen
+        ldd     ocrh            ; Programmieren des
+        addd    #tics           ; n„chsten Timer-
+        std     ocrh            ; intervalls
+        staa    ad              ; A/D-Wandler anstoen
+        ldaa    buffer
+        staa    buffer+1
+        ldaa    input           ; Eingabesumme durch 256 teilen
+        staa    buffer
+        ldab    ad              ; neuen A/D-Wert laden
+        ldaa    #b0             ; mit b0
+        mul                     ; multiplizieren und
+        asld                    ; teilen durch 128 -> schieben um 1 Position
+        tab                     ; nach links ergibt Wert um 256 zu gro!
+        clra                    ; Akku-D = A/D * b0 / 128
+        std     input
+        ldab    buffer
+        ldaa    #a1
+        mul
+        asld                    ; Teilprodukt ist um 256 zu gro
+        addd    input           ; zur Eingabe addieren
+        std     input
+        ldaa    buffer+1
+        ldab    #a2
+        mul
+        std     help            ; Teilprodukt
+        ldd     input           ; von der
+        subd    help            ; Eingabesumme
+        std     input           ; abziehen
+        std     output
+        ldab    buffer
+        clra
+        asld                    ; *2
+        addd    output
+        std     output
+        ldab    buffer+1
+        clra
+        addd    output
+        staa    da              ; berechneten Wert/256 ausgeben
+        rti
+
+;*********************************************************
+;  Konstanten fr das Filter entnommen aus:
+;  H. G”tz; Einfhrung in die digitale Signalverarbeitung;
+;  Teubner Studienskripten 117; 1990; Seite 201
+;*********************************************************
+
+b0      .db     159             ;  0.0048517 = 1/128 * 159/256
+;b1                                2
+a1      .db     232             ;  1.8143    = 232/128
+a2      .db     213             ; -0.8344    = 213/256
+
+        .end
+

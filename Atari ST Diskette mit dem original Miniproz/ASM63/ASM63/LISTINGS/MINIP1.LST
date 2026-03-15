@@ -1,0 +1,2411 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:28    Page: 1
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .LIST                   ; LISTING ERZEUGEN
+   2  2000                       .FILE                   ; LISTING IN FILE SCHREIBEN
+   3  2000                       .SYMTAB                 ; SYMBOLTABELLE ERZEUGEN
+   4  2000                       .EXPAND                 ; AUSFöHRLICHES LISTING
+   5  2000                       .INCL   KONSTANT        ; KONSTANTENDEFINITIONEN öBERNEHMEN
+      2000               ;****************************************************************
+      2000               ;       Includefile mit hÑufig benîtigten Konstanten
+      2000               ;****************************************************************
+      2000               
+      2000               
+      2000               ; ALLGENMEINE KONSTANTEN:
+      2000               
+      2000               ctrl    .equ    $40     ; Control-Offset fÅr Steuerzeichen
+      2000               ctrlc   .equ    'C-ctrl ; Programmabbruch
+      2000               ctrlp   .equ    'P-ctrl ; Umschaltung Host/Terminal
+      2000               ctrlq   .equ    'Q-ctrl ; Ausgabe weiterlaufen lassen
+      2000               ctrls   .equ    'S-ctrl ; Ausgabe anhalten
+      2000               ctrlt   .equ    'T-ctrl ; Statusausgabe
+      2000               ctrlx   .equ    'X-ctrl ; Eingabe zurÅcknehmen
+      2000               ctrlz   .equ    'Z-ctrl ; Endezeichen
+      2000               space   .equ    $20     ; Zwischenraum
+      2000               bell    .equ    7       ; Terminalklingel
+      2000               bs      .equ    8       ; RÅckschritt
+      2000               cr      .equ    $D      ; WagenrÅcklauf
+      2000               lf      .equ    $A      ; Zeilentransport
+      2000               esc     .equ    27      ; Umschaltzeichen fÅr Terminal
+      2000               xon     .equ    ctrls
+      2000               xoff    .equ    ctrlq
+      2000               delete  .equ    $7F     ; Lîsch-Indikator
+      2000               jmp     .equ    $7E     ; 6301-Opcode fÅr JMP-Befehl
+      2000               swi     .equ    $3F     ; 6301-Opcode fÅr SWI-Befehl
+      2000               
+   6  2000               
+   7  2000               ;************************************************************
+   8  2000               ;       MINIPROZ-BETRIEBSSYSTEM FUER HITACHI 63701
+   9  2000               ;
+  10  2000               ;       (c) 1988 by Prof. Dr. Th. Schiller
+  11  2000               ;       DBP-TELEKOM, Fachhochschule Berlin
+  12  2000               ;       Ringbahnstraûe 130, D-1000 Berlin 42
+  13  2000               ;
+  14  2000               ;************************************************************
+  15  2000               
+  16  2000               ; EINIGE ZUSéTZLICHE KONSTANTEN
+  17  2000               
+  18  2000               EQUAL   = $80+'=
+  19  2000               RAMSTA  = $2000
+  20  2000               
+  21  2000               ; MCU-REGISTER:
+  22  2000               
+  23  2000               P1DDR   = 0             ; PORT 1 DATA DIRECTION REGISTER
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:28    Page: 2
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+  24  2000               P2DDR   = 1             ; PORT 2 DATA DIRECTION REGISTER
+  25  2000               P1DR    = 2             ; PORT 1 DATA REGISTER
+  26  2000               P2DR    = 3             ; PORT 2 DATA REGISTER & MODE REGISTER
+  27  2000               P4DDR   = 5             ; PORT 4 DATA DIRECTION REGISTER
+  28  2000               P4DR    = 7             ; PORT 4 DATA REGISTER
+  29  2000               TCSR    = 8             ; TIMER CONTROL/STATUSREGISTER
+  30  2000               TIMERH  = 9             ; TIMER (HIGH BYTE)
+  31  2000               TIMERL  = $A            ; TIMER (LOW BYTE)
+  32  2000               OCRH    = $B            ; OUTPUT COMPARE REGISTER (HIGH)
+  33  2000               OCRL    = $C            ; OUTPUT COMPARE REGISTER (LOW)
+  34  2000               ICRH    = $D            ; INPUT CAPTURE REGISTER (HIGH)
+  35  2000               ICRL    = $E            ; INPUT CAPTURE REGISTER (LOW)
+  36  2000               RMCR    = $10           ; RATE & MODE CONTROL REGISTER
+  37  2000               TRCSR   = $11           ; TRANSMIT/RECEIVE CONTROL/STATUSREGISTER
+  38  2000               RDR     = $12           ; RECEIVE DATA REGISTER
+  39  2000               TDR     = $13           ; TRANSMIT DATA REGISTER
+  40  2000               RCR     = $14           ; RAM CONTROL REGISTER
+  41  2000               
+  42  2000               
+  43  2000               ; USER CPU-REGISTER
+  44  2000               
+  45  3FB3                       .ORG    $3FB3
+  46  3FB3               
+  47  3FB3               F       .BLKB   1       ; PROCESSOR STATUSREGISTER      (USER)
+  48  3FB4               A       .BLKB   1       ; AKKU A                        (USER)
+  49  3FB5               B       .BLKB   1       ; AKKU B                        (USER)
+  50  3FB6               XH      .BLKB   1       ; X-REGISTER HIGH               (USER)
+  51  3FB7               XL      .BLKB   1       ; X-REGISTER LOW                (USER)
+  52  3FB8               PCH     .BLKB   1       ; PROGRAM COUNTER HIGH          (USER)
+  53  3FB9               PCL     .BLKB   1       ; PROGRAM COUNTER LOW           (USER)
+  54  3FBA               SPH     .BLKB   1       ; STACKPOINTER HIGH             (USER)
+  55  3FBB               SPL     .BLKB   1       ; STACKPOINTER LOW              (USER)
+  56  3FBC               
+  57  3FBC               ; VARIABLEN DES MINIPROZ-MONITORS
+  58  3FBC               
+  59  3FBC               XHI     .BLKB   1       ; HILFSZELLE 1 FUER
+  60  3FBD               XLO     .BLKB   1       ; 16 BIT OPERATIONEN
+  61  3FBE               YHI     .BLKB   1       ; HILFSZELLE 2 FUER
+  62  3FBF               YLO     .BLKB   1       ; 16 BIT OPERATIONEN
+  63  3FC0               ZHI     .BLKB   1       ; GHILFSZELLE 3 FUER
+  64  3FC1               ZLO     .BLKB   1       ; 16 BIT OPERATIONEN
+  65  3FC2               SCRATW  .BLKW   1       ; 16 BIT ZWISCHENSPEICHER
+  66  3FC4               RXDATA  .BLKB   1       ; ASCII-ZEICHEN VON SCI
+  67  3FC5               CKSUM   .BLKB   1       ; PRUEFSUMME
+  68  3FC6               BYTECT  .BLKB   1       ; BYTE ZAEHLER
+  69  3FC7               SYSFLG  .BLKB   1       ; SYSTEMFLAGS
+  70  3FC8               
+  71  3FC8               ;       BIT #   BEDEUTUNG BEI BIT = 1
+  72  3FC8               ;       -------------------------------------------
+  73  3FC8               ;        0      USER-MODE
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:32    Page: 3
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+  74  3FC8               ;        1      ---
+  75  3FC8               ;        2      16-BIT REGISTER ADRESSIERT
+  76  3FC8               ;        3      CTRL/C ABBRUCH GESPERRT
+  77  3FC8               ;        4      ---
+  78  3FC8               ;        5      ---
+  79  3FC8               ;        6      ORFE (VON SCI)
+  80  3FC8               ;        7      RDRF (VON SCI)
+  81  3FC8               
+  82  3FC8               ; STACK DES MINIPROZ-MONITORS
+  83  3FC8               
+  84  3FC8                       .BLKB   31      ; RAUM FUER 16 UNTERPROGRAMMEBENEN
+  85  3FE7               STACK   .BLKB   1
+  86  3FE8               
+  87  3FE8               ; EINSPRUNGPUNKTE FUER INTERRUPTS (PLATZ FUER BEFEHL: "JMP ADR")
+  88  3FE8               
+  89  3FE8               JSCI    .BLKB   3       ; SCI-IRQ2                      (MONITOR)
+  90  3FEB               JTOF    .BLKB   3       ; TOF-IRQ2
+  91  3FEE               JOCF    .BLKB   3       ; OCF-IRQ2
+  92  3FF1               JICF    .BLKB   3       ; ICF-IRQ2
+  93  3FF4               JIRQ1   .BLKB   3       ; IRQ1
+  94  3FF7               JSWI    .BLKB   3       ; SWI                           (MONITOR)
+  95  3FFA               JNMI    .BLKB   3       ; NMI
+  96  3FFD               JTRAP   .BLKB   3       ; TRAP-INTERRUPT
+  97  4000               
+  98  4000               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:34    Page: 4
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+  99  4000                       .PAGE
+ 100  4000               ;********************************************************************
+ 101  4000               ;  Einsprung in den Monitor
+ 102  4000               ;
+ 103  4000               ;  Die folgenden Einsprungpunkte dienen zum Neustart des MINIPROZ-
+ 104  4000               ;  Monitors. Die Einsprungpunkte kînnen mit JMP oder JSR angesprungen
+ 105  4000               ;  werden. Es erfolgt  k e i n  RÅcksprung zum aufrufenden Programm.
+ 106  4000               ;
+ 107  4000               ;  Eine Weiterlauf des aufrufenden Programms an der unterbrochenen
+ 108  4000               ;  Stelle ist nicht mîglich! Hierzu muû der Monitor mit einem  SWI-
+ 109  4000               ;  Befehl aufgerufen werden.
+ 110  4000               ;********************************************************************
+ 111  4000               
+ 112  F000                       .org    $f000
+ 113  F000               
+ 114  F000               ;**********     Kaltstart-Einsprung in den Monitor. Alle MCU-Parameter
+ 115  F000               ;* COLD   *     werden neu gesetzt. Autostart-Funktion wird ausgefÅhrt!
+ 116  F000               ;**********
+ 117  F000               ;
+ 118  F000   7E F0 1E    cold    jmp     start   ; I-Parameter: --- keine ---
+ 119  F003               ;       Bei Autostart:    O-Parameter: --- keine ---
+ 120  F003               ;
+ 121  F003               ;                            zerstîrt: F, A, B, X, SP, PC
+ 122  F003               
+ 123  F003               
+ 124  F003               ;**********     Warmstart-Einsprung in den Monitor. Monitor-SP und SYSFLG
+ 125  F003               ;* WARM   *     werden initialisiert. Sprung in die Kommandoschleife.
+ 126  F003               ;**********     (Funktion entspricht Ctrl/C-Eingabe im Monitorprogramm)
+ 127  F003               ;
+ 128  F003   7E F0 AB    warm    jmp     contrl  ; I-Parameter: --- keine ---
+ 129  F006               ;
+ 130  F006               ;                            zerstîrt: F, A, B, X, SP, PC
+ 131  F006               
+ 132  F006               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:34    Page: 5
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 133  F006                       .page
+ 134  F006               ;********************************************************************
+ 135  F006               ;  MINIPROZ-Systemunterprogramme:
+ 136  F006               ;
+ 137  F006               ;  Die folgenden Einsprungpunkte fÅhren zu Unterprogrammen, die vom
+ 138  F006               ;  Anwenderprogramm durch  JSR ADRESSE  aufgerufen werden kînnen. Alle
+ 139  F006               ;  Unterprogramme kehren mit  RTS  zum aufrufenden Programm zurÅck. Die
+ 140  F006               ;  Unterprogramme des Monitors sind  n i c h t  reentrant-fÑhig!
+ 141  F006               ;
+ 142  F006               ;  Alle Unterroutinen sind durch Interrupt weitgehend unterbrechbar!
+ 143  F006               ;  Die Eingaberoutinen mÅssen mit gelîschter Interruptmaske angesprungen
+ 144  F006               ;  werden!
+ 145  F006               ;
+ 146  F006               ;  ACHTUNG: Alle anderen Unterroutinen des Monitors kînnen bei
+ 147  F006               ;           énderungen am Monitor in der Adreûlage verschoben sein!
+ 148  F006               ;********************************************************************
+ 149  F006               
+ 150  F006               
+ 151  F006               ;**********     Lese ein ASCII-Zeichen vom Terminal. Wartet auf Eingabe.
+ 152  F006               ;* TERINP *     Das gelesene Zeichen wird nicht auf dem Terminal angezeigt!
+ 153  F006               ;**********
+ 154  F006               ;
+ 155  F006   7E F3 87    terinp  jmp     read    ; I-Parameter: --- keine ---
+ 156  F009               ;                         O-Parameter: Akku-A enthÑlt ASCII-Zeichen
+ 157  F009               ;                            zerstîrt: F, A
+ 158  F009               
+ 159  F009               
+ 160  F009               ;**********     Gebe ein ASCII-Zeichen auf dem Terminalkanal aus. Die
+ 161  F009               ;* TEROUT *     Ausgabe wird durch XON/XOFF vom Terminal beeinfluût.
+ 162  F009               ;**********
+ 163  F009               ;
+ 164  F009   7E F3 99    terout  jmp     write   ; I-Parameter: Akku-A enthÑlt das ASCII-Zeichen
+ 165  F00C               ;                         O-Parameter: --- keine ---
+ 166  F00C               ;                            zerstîrt: F
+ 167  F00C               
+ 168  F00C               
+ 169  F00C               ;**********     Lese Zeichen aus Terminalbuffer und gebe Zeichen am Terminal
+ 170  F00C               ;* TERIO  *     aus. Wartet auf Eingabe. Ausgabe XON/XOFF-gesteuert.
+ 171  F00C               ;**********
+ 172  F00C               ;
+ 173  F00C   7E F3 BE    terio   jmp     echo    ; I-Parameter: --- keine ---
+ 174  F00F               ;                         O-Parameter: Akku-A enthÑlt das ASCII-Zeichen
+ 175  F00F               ;                            zerstîrt: F, A
+ 176  F00F               
+ 177  F00F               
+ 178  F00F               ;**********     Gebe eine ASCII-Zeichenkette auf dem Terminal aus. X-Register
+ 179  F00F               ;* PRINT  *     zeigt auf den Anfang. Ende mit 0-Byte oder $80, dann wird
+ 180  F00F               ;**********     zusÑtzlich ein CR, LF ausgegeben. XON/XOFF beeinfluût
+ 181  F00F               ;               die Ausgabe!
+ 182  F00F               ;
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:36    Page: 6
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 183  F00F   7E F3 F2    print   jmp     outstr  ; I-Parameter: X zeigt auf Anfang der Zeichenkette
+ 184  F012               ;                         O-Parameter: X zeigt auf letztes Byte am Textende
+ 185  F012               ;                            zerstîrt: F, A, X
+ 186  F012               
+ 187  F012               ;**********     Gibt einen WagenrÅcklauf (CR) und einen Zeilentransport (LF)
+ 188  F012               ;* PRCRLF *     auf dem Terminal aus. XON/XOFF beeinfluût die Ausgabe!
+ 189  F012               ;**********
+ 190  F012               ;
+ 191  F012   7E F3 D8    prcrlf  jmp     outcl   ; I-Parameter: --- keine ---
+ 192  F015               ;                         O-Parameter: --- keine ---
+ 193  F015               ;                            zerstîrt: F, A
+ 194  F015               
+ 195  F015               
+ 196  F015               ;**********     Gibt einen Zwischenraum (SPACE) auf dem Terminal aus. XON
+ 197  F015               ;* PRSPAC *     XOFF beeinfluût die Ausgabe!
+ 198  F015               ;**********
+ 199  F015               ;
+ 200  F015   7E F3 CE    prspac  jmp     outs    ; I-Parameter: --- keine ---
+ 201  F018               ;                         O-Parameter: --- keine ---
+ 202  F018               ;                            zerstîrt: F, A
+ 203  F018               
+ 204  F018               
+ 205  F018               ;**********     Liest ein aus zwei Nibbeln bestehendes Hex-Byte ein, gibt die
+ 206  F018               ;* INPHEX *     Zeichen am Terminal aus und wandelt sie in eine BinÑrzahl um.
+ 207  F018               ;**********     Die Pseudotetraden mÅssen Groûbuchstaben sein. Eingabe wird
+ 208  F018               ;               bei Fehlzeichen abgebrochen. XON/XOFF beeinfluût die Ausgabe.
+ 209  F018               ;
+ 210  F018   7E F4 3F    inphex  jmp     inp2ha  ; I-Parameter: --- keine ---
+ 211  F01B               ;                         O-Parameter: Akku-A enthÑlt das Zeichen als Byte
+ 212  F01B               ;                                      Bei Fehlzeichen wird CY=1, sonst CY=0
+ 213  F01B               ;                                      Fehlzeichen wird in Akku-B Åbergeben
+ 214  F01B               ;                            zerstîrt: F, A, B
+ 215  F01B               
+ 216  F01B               
+ 217  F01B               ;**********     Gibt ein Byte als HEX-Zahl auf dem Terminal aus. Pseudo-
+ 218  F01B               ;* OUTHEX *     tetraden werden als Groûbuchstaben ausgegeben. XON/XOFF
+ 219  F01B               ;**********     beeinfluût die Ausgabe!
+ 220  F01B               ;
+ 221  F01B   7E F4 0C    outhex  jmp     out2ha  ; I-Parameter: Akku-A enthÑlt das Byte
+ 222  F01E               ;                         O-Parameter: --- keine ---
+ 223  F01E               ;                            zerstîrt: F, A
+ 224  F01E               
+ 225  F01E               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:38    Page: 7
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 226  F01E                       .PAGE
+ 227  F01E               ;************************************************************
+ 228  F01E               ;       KALTSTARTPUNKT NACH RESET
+ 229  F01E               ;************************************************************
+ 230  F01E               
+ 231  F01E   0F          START   SEI                     ; INTERRUPTS ZUNéCHST SPERREN
+ 232  F01F   8E 3F E7            LDS     #STACK          ; MONITOR STACK EINRICHTEN
+ 233  F022               
+ 234  F022               ; VOREINSTELLUNG DER PORT-REGISTER
+ 235  F022               ;
+ 236  F022               ;       PORT 1  IST FREI VERFUEGBAR (8 BIT I/O)
+ 237  F022               ;       PORT 2  IST BELEGT DURCH SCI UND TIMER
+ 238  F022               ;       PORT 3  IST BELEGT DURCH DATENBUS/ADRESSBUS (LOW)
+ 239  F022               ;       PORT 4  IST BELEGT DURCH ADRESSBUS (HIGH)
+ 240  F022               
+ 241  F022               ;       P20     TIMER IN                        CPU <--
+ 242  F022               ;       P21     TIMER OUT                       CPU -->
+ 243  F022               ;       P22     SCI CLOCK OUT                   CPU -->
+ 244  F022               ;       P23     SCI RXD                         CPU <--
+ 245  F022               ;       P24     SCI TXD                         CPU -->
+ 246  F022               
+ 247  F022   86 16               LDAA    #%00010110
+ 248  F024   97 01               STAA    <P2DDR
+ 249  F026   86 FF               LDAA    #%11111111      ; PORT 4 WIRD ADRESSBUS (A8 - A15)
+ 250  F028   97 05               STAA    <P4DDR
+ 251  F02A   86 09               LDAA    #%00001001      ; SCI MIT 9600 BD, 1 STOPBIT, NRZ, TAKT INTERN
+ 252  F02C   97 10               STAA    <RMCR
+ 253  F02E   86 1A               LDAA    #%00011010      ; SCI TX/RX FREIGEBEN MIT RX-IRQ, OHNE WAKE UP
+ 254  F030   97 11               STAA    <TRCSR
+ 255  F032   CE 3F B9            LDX     #PCL
+ 256  F035   FF 3F BA            STX     SPH             ; VOREINSTELLUNG EINES USER-STACKS
+ 257  F038   09                  DEX                     ; ZEIGE AUF USER-PCH
+ 258  F039   CC 20 00            LDD     #$2000          ; STANDADRD-STARTADRESSE
+ 259  F03C   ED 00               STD     ,X              ;    IN USER-PC SCHREIBEN
+ 260  F03E   7F 3F B3            CLR     F               ; USER-F-REG LOESCHEN
+ 261  F041   7F 3F C7            CLR     SYSFLG
+ 262  F044   86 7E               LDAA    #JMP            ; VOREINSTELLUNG
+ 263  F046   B7 3F E8            STAA    JSCI            ;    DER
+ 264  F049   B7 3F F7            STAA    JSWI            ;    EINSPRUNG-
+ 265  F04C   B7 3F FD            STAA    JTRAP           ;    PUNKTE
+ 266  F04F   CE F0 E4            LDX     #ABORT
+ 267  F052   FF 3F E9            STX     JSCI+1          ;    FöR
+ 268  F055   CE F2 1E            LDX     #BREAK          ;    SCI UND
+ 269  F058   FF 3F F8            STX     JSWI+1          ;    SWI INTERRUPTS,
+ 270  F05B   CE F0 D3            LDX     #OPCERR         ;    SOWIE BEI
+ 271  F05E   FF 3F FE            STX     JTRAP+1         ;    OPCODE-ERROR
+ 272  F061               
+ 273  F061               ; MEMORY UEBERPRUEFEN OHNE RAM-INHALT ZU ZERSTôREN !
+ 274  F061               
+ 275  F061   CE F6 25            LDX     #SELFT          ; MELDUNG AUSGEBEN, DASS
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:42    Page: 8
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 276  F064   BD F3 F2            JSR     OUTSTR          ; SELBSTTEST LéUFT
+ 277  F067   CE 1F FF            LDX     #RAMSTA-1       ; ANFANGSADRESSE DES RAMTESTS
+ 278  F06A   08          RAMLOP  INX
+ 279  F06B   A6 00               LDAA    ,X
+ 280  F06D   43                  COMA                    ; KOMPLEMENT BILDEN
+ 281  F06E   63 00               COM     ,X
+ 282  F070   A1 00               CMPA    ,X              ; FEHLER ?
+ 283  F072   26 09               BNE     RAMERR
+ 284  F074   63 00               COM     ,X              ; ORIGINALPATTERN HERSTELLEN
+ 285  F076   43                  COMA
+ 286  F077   A1 00               CMPA    ,X              ; FEHLER ?
+ 287  F079   26 02               BNE     RAMERR
+ 288  F07B   20 ED               BRA     RAMLOP          ; NEIN, WEITER IM TEST
+ 289  F07D               
+ 290  F07D   09          RAMERR  DEX                     ; LETZTE FUNKTIONSFAEHIGE RAM-ZELLE
+ 291  F07E   FF 3F BC            STX     XHI             ; RETTE ENDADRESSE
+ 292  F081   0E                  CLI                     ; INTERRUPTS FREIGEBEN
+ 293  F082   CE F6 43            LDX     #RAMMS1         ; "Ram area found from $"
+ 294  F085   BD F3 F2            JSR     OUTSTR          ; GEBE RAM-MESSAGE AUS
+ 295  F088   FE 3F BC            LDX     XHI
+ 296  F08B   3C                  PSHX
+ 297  F08C   CE 20 00            LDX     #RAMSTA
+ 298  F08F   BD F4 01            JSR     OUTX            ; ANFANG DES RAM-BEREICHS AUSGEBEN
+ 299  F092   38                  PULX
+ 300  F093   FF 3F BC            STX     XHI     
+ 301  F096   CE F6 5B            LDX     #TOMSG          ; "to $"
+ 302  F099   BD F3 F2            JSR     OUTSTR
+ 303  F09C   CE 3F BC            LDX     #XHI            ; GEBE LETZTE RAM-ADRESSE AUS
+ 304  F09F   BD F4 07            JSR     OUT4H           ; WORT AUSGEBEN
+ 305  F0A2   BD F3 D8            JSR     OUTCL           ; <CR><LF>
+ 306  F0A5               
+ 307  F0A5               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:42    Page: 9
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 308  F0A5                       .PAGE
+ 309  F0A5               ;****************************************************************
+ 310  F0A5               ;       WARMSTART DES MONITORPROGRAMMS
+ 311  F0A5               ;****************************************************************
+ 312  F0A5               
+ 313  F0A5               
+ 314  F0A5               ; KOMMANDOSCHLEIFE
+ 315  F0A5               
+ 316  F0A5   CE F6 61    HELP    LDX     #HLPTXT         ; KOMMANDOöBERSICHT AUSGEBEN
+ 317  F0A8   BD F3 F2            JSR     OUTSTR
+ 318  F0AB   8E 3F E7    CONTRL  LDS     #STACK          ; MONITORSTACK SETZEN
+ 319  F0AE   0E                  CLI                     ; INTERRUPTS FREIGEBEN
+ 320  F0AF   CE F9 07            LDX     #PROMPT         ; MONITORPROMPT AUSGEBEN
+ 321  F0B2   BD F3 F2            JSR     OUTSTR
+ 322  F0B5   BD F3 BE            JSR     ECHO            ; ASCII-ZEICHEN LESEN
+ 323  F0B8   CE FA 7F            LDX     #COMTAB         ; START DER BEFEHLSTABELLE
+ 324  F0BB   5F                  CLRB
+ 325  F0BC   A1 00       SEACOM  CMPA    ,X              ; ZEICHEN GEFUNDEN ?
+ 326  F0BE   27 08               BEQ     FOUND
+ 327  F0C0   08                  INX
+ 328  F0C1   5C                  INCB
+ 329  F0C2   C1 07               CMPB    #COMVEK-COMTAB  ; LAENGE DER BEFEHLSTABELLE
+ 330  F0C4   27 E5               BEQ     CONTRL          ; EINGABE NICHT GEFUNDEN
+ 331  F0C6   20 F4               BRA     SEACOM
+ 332  F0C8               
+ 333  F0C8   58          FOUND   ASLB                    ; WORTOFFSET ERZEUGEN
+ 334  F0C9   CE FA 86            LDX     #COMVEK         ; TABELLENSTART LADEN,
+ 335  F0CC   3A                  ABX                     ;    OFFSET ADDIEREN
+ 336  F0CD   EE 00               LDX     ,X              ;    UND SPRUNGADRESSE LADEN
+ 337  F0CF   AD 00               JSR     ,X              ; KOMMANDO AUSFUEHREN
+ 338  F0D1   20 D8               BRA     CONTRL
+ 339  F0D3               
+ 340  F0D3               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:46    Page: 10
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 341  F0D3                       .PAGE
+ 342  F0D3               ;****************************************************************
+ 343  F0D3               ;       INTERRUPT PROGRAMME FUER TRAP UND SCI-IRQ
+ 344  F0D3               ;****************************************************************
+ 345  F0D3               
+ 346  F0D3               
+ 347  F0D3               ;----------------------------------------------------------------
+ 348  F0D3               ; USER-PROGRAMM BEI OPCODE-FEHLER ABBRECHEN
+ 349  F0D3               ;----------------------------------------------------------------
+ 350  F0D3               
+ 351  F0D3   30          OPCERR  TSX                     ; X ZEIGT AUF USER-F
+ 352  F0D4   18                  XGDX
+ 353  F0D5   C3 00 06            ADDD    #6
+ 354  F0D8   FD 3F BA            STD     SPH             ; USER-SP VOR DEM EINSPRUNG !
+ 355  F0DB   8E 3F E7            LDS     #STACK
+ 356  F0DE   0E                  CLI                     ; INTERRUPT WIEDER FREIGEBEN
+ 357  F0DF   CE FA 65            LDX     #OPCODM         ; "Illegal opcode at PC=$"
+ 358  F0E2   20 4F               BRA     PCOUT
+ 359  F0E4               
+ 360  F0E4               
+ 361  F0E4               
+ 362  F0E4               ;----------------------------------------------------------------
+ 363  F0E4               ; KOMMANDO MIT CTRL/C ABBRECHEN ODER BEI CTRL/T REGISTER AUSGEBEN
+ 364  F0E4               ;----------------------------------------------------------------
+ 365  F0E4               
+ 366  F0E4   96 11       ABORT   LDAA    <TRCSR          ; DATEN VOM SCI ?
+ 367  F0E6   27 1D               BEQ     EXIT1           ; NEIN, UNERKLAERLICHER INTERRUPT
+ 368  F0E8   84 C0               ANDA    #$C0            ; RDRF UND ORFE BITS HERAUSLOESEN
+ 369  F0EA   F6 3F C7            LDAB    SYSFLG
+ 370  F0ED   C4 3F               ANDB    #$3F            ; RDRF UND ORFE BIT LOESCHEN
+ 371  F0EF   1B                  ABA                     ;    UND NEUE BITS EINBINDEN
+ 372  F0F0   36                  PSHA
+ 373  F0F1   D6 12               LDAB    <RDR            ; NEUES ZEICHEN LESEN
+ 374  F0F3   C1 03               CMPB    #CTRLC          ; ABBRUCHZEICHEN EMPFANGEN ?
+ 375  F0F5   27 1F               BEQ     EXIT2           ; JA:
+ 376  F0F7   47                  ASRA                    ; NEIN: USER MODE EINGESCHALTET ?
+ 377  F0F8   24 04               BCC     SAVECH          ; NEIN: ZEICHEN ABSPEICHERN
+ 378  F0FA   C1 14               CMPB    #CTRLT          ; JA:   ZEICHEN = CTRL/T ?
+ 379  F0FC   27 08               BEQ     CTRLTI
+ 380  F0FE   32          SAVECH  PULA                    ; RDRF UND ORFE LADEN
+ 381  F0FF   B7 3F C7            STAA    SYSFLG
+ 382  F102   F7 3F C4            STAB    RXDATA          ; 1 BYTE BUFFER
+ 383  F105   3B          EXIT1   RTI
+ 384  F106               
+ 385  F106               ; CTRL/T GIBT IM LAUFENDEN USER-PROGRAMM ALLE CPU-REGISTER AUS
+ 386  F106               
+ 387  F106   31          CTRLTI  INS                     ; JA:   STACK KORRIGIEREN
+ 388  F107   30                  TSX                     ;    UND USER STACKPOINTER RETTEN
+ 389  F108   18                  XGDX                    ; USER-SP ZEIGT NUN AUF DIE
+ 390  F109   C3 00 06            ADDD    #6              ;    ADRESSE VOR DEM INTERRUPT !
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:48    Page: 11
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 391  F10C   FD 3F BA            STD     SPH             ; USER-SP SPEICHERN
+ 392  F10F   BD F3 D8            JSR     OUTCL           ; IM LAUFENDEN USER-PROGRAMM
+ 393  F112   BD F3 3A            JSR     USRREG          ; ALLE CPU-REGISTER AUSGEBEN
+ 394  F115   3B                  RTI
+ 395  F116               
+ 396  F116               ; AUSWERTUNG DES ABBRUCHZEICHENS CTRL/C
+ 397  F116               
+ 398  F116   B6 3F C7    EXIT2   LDAA    SYSFLG
+ 399  F119   85 01               BITA    #%00000001      ; USER MODE GESETZT ?
+ 400  F11B   26 07               BNE     ABORT1          ; JA:   USERPROGRAMM ABBRECHEN
+ 401  F11D   85 08               BITA    #%00001000      ; CTRL/C-FLAG GESETZT ?
+ 402  F11F   26 DD               BNE     SAVECH          ; JA:   CTRL/C DANN ABSPEICHERN
+ 403  F121   7E F0 AB            JMP     CONTRL          ; NEIN: ABBRUCH EINES HAUPTKOMMANDOS
+ 404  F124               
+ 405  F124   30          ABORT1  TSX                     ; USER STACKPOINTER RETTEN
+ 406  F125   18                  XGDX                    ; USER-SP ZEIGT NUN AUF DIE
+ 407  F126   C3 00 07            ADDD    #7              ;    ADRESSE VOR DEM INTERRUPT !
+ 408  F129   FD 3F BA            STD     SPH             ; USER-SP SPEICHERN
+ 409  F12C   8E 3F E7            LDS     #STACK          ; MONITOR STACK SETZEN
+ 410  F12F   0E                  CLI                     ; INTERRUPT WIEDER FREIGEBEN
+ 411  F130   CE FA 3C            LDX     #CTRLCM         ; ABBRUCHMELDUNG AUSGEBEN
+ 412  F133   BD F3 F2    PCOUT   JSR     OUTSTR          
+ 413  F136   FE 3F BA            LDX     SPH             ; X ZEIGT NUN AUF USER-PCL
+ 414  F139   09                  DEX                     ;    UND JETZT AUF USER-PCH
+ 415  F13A   BD F4 07            JSR     OUT4H           ; USER-PC AUSGEBEN
+ 416  F13D   7E F2 3D            JMP     BREAK1
+ 417  F140               
+ 418  F140               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:52    Page: 12
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 419  F140                       .PAGE
+ 420  F140               ;****************************************************************
+ 421  F140               ;       SYSTEMUNTERPROGRAMME
+ 422  F140               ;****************************************************************
+ 423  F140               
+ 424  F140               
+ 425  F140               ;----------------------------------------------------------------
+ 426  F140               ; UNTERBROCHENES USER-PROGRAMM WEITERLAUFEN LASSEN
+ 427  F140               ;----------------------------------------------------------------
+ 428  F140               
+ 429  F140   CE F9 14    CONTIN  LDX     #TXTCON         ; "ontinue user-program at PC=$"
+ 430  F143   BD F3 F2            JSR     OUTSTR
+ 431  F146   FE 3F BA            LDX     SPH
+ 432  F149   09                  DEX                     ; USER PCH ADRESSIEREN
+ 433  F14A   EE 00               LDX     ,X              ;   LADEN
+ 434  F14C   FF 3F BC            STX     XHI             ;   ZWISCHENSPEICHERN FUER LABEL G1
+ 435  F14F   BD F4 01            JSR     OUTX            ;   UND AUSGEBEN
+ 436  F152   7E F2 05            JMP     G1
+ 437  F155               
+ 438  F155               
+ 439  F155               ;----------------------------------------------------------------
+ 440  F155               ; ANZEIGE EINES SPEICHERBEREICHS
+ 441  F155               ;----------------------------------------------------------------
+ 442  F155               
+ 443  F155   CE F9 31    DUMP    LDX     #TXTDUM         ; "ump memory from $"
+ 444  F158   BD F3 F2            JSR     OUTSTR
+ 445  F15B   BD F4 5A            JSR     INP4HX
+ 446  F15E   24 06               BCC     D1
+ 447  F160   CE FA 06    DERR    LDX     #CHRERR         ; "??? Invalid character"
+ 448  F163   7E F3 F2            JMP     OUTSTR
+ 449  F166               
+ 450  F166   FF 3F BE    D1      STX     YHI             ; STARTADRESSE MERKEN
+ 451  F169   CE F6 5B            LDX     #TOMSG          ; " to $"
+ 452  F16C   BD F3 F2            JSR     OUTSTR
+ 453  F16F   BD F4 5A            JSR     INP4HX
+ 454  F172   25 EC               BCS     DERR
+ 455  F174   FF 3F C0            STX     ZHI             ; ENDADRESSE RETTEN
+ 456  F177   FE 3F BE            LDX     YHI             ; STARTADRESSE LADEN
+ 457  F17A   BD F3 D8    DUMP1   JSR     OUTCL           ; NEUE ZEILE ANFANGEN
+ 458  F17D   18                  XGDX
+ 459  F17E   C4 F0               ANDB    #$F0            ; ANFANG AUF VIELFACHEN VON 16
+ 460  F180   18                  XGDX
+ 461  F181   3C                  PSHX                    ; DIE NORMALISIERTE ADRESSE RETTEN
+ 462  F182   BD F4 01            JSR     OUTX            ; NORMALISIERTE ADRESSE AUSGEBEN
+ 463  F185   BD F3 CC            JSR     OUTDS           ; DOPPELTER ZWISCHENRAUM
+ 464  F188   38                  PULX                    ; NORMALISIERTE ADRESSE ZURUECKLADEN
+ 465  F189   BC 3F BE    DUMP11  CPX     YHI             ; NORMALISIERTE = RICHTIGE STARTADRESSE ?
+ 466  F18C   27 09               BEQ     DUMP12
+ 467  F18E   08                  INX                     ; NORMALISIERTE ADRESSE ERHOEHEN
+ 468  F18F   BD F3 D2            JSR     OUTDM           ; ZWEI STRICHE AUSGEBEN
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:04:54    Page: 13
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 469  F192   BD F3 E0            JSR     TRENNZ          ; TRENNZEICHEN (1 ODER 2 SPACE) AUSGEBEN
+ 470  F195   20 F2               BRA     DUMP11
+ 471  F197               
+ 472  F197   FE 3F BE    DUMP12  LDX     YHI             ; DAS IST DIE RICHTIGE STARTADRESSE
+ 473  F19A   BD F4 09    DUMP2   JSR     OUT2H           ; ADRESSIERTES BYTE
+ 474  F19D   BD F3 E0            JSR     TRENNZ          ;         UND TRENNZEICHEN AUSGEBEN
+ 475  F1A0   09                  DEX                     ; KORREKTUR FUER ENDVERGLEICH
+ 476  F1A1   BC 3F C0            CPX     ZHI             ; ENDADRESSE ERREICHT ?
+ 477  F1A4   27 09               BEQ     DUMP21          ; JA
+ 478  F1A6   08                  INX                     ; NAECHSTE ADRESSE
+ 479  F1A7   18                  XGDX
+ 480  F1A8   C5 0F               BITB    #$F             ; EINE HEX-ZEILE FERTIG ?
+ 481  F1AA   18                  XGDX
+ 482  F1AB   26 ED               BNE     DUMP2           ; NEIN, WEITER...
+ 483  F1AD   20 0F               BRA     DUMP23
+ 484  F1AF               
+ 485  F1AF   08          DUMP21  INX                     ; ADRESSE+1
+ 486  F1B0   18                  XGDX                    ; UNTERSTES DIGIT DER STARTADRESSE
+ 487  F1B1   C5 0F               BITB    #$F             ;       IM B-REGISTER ABTRENNEN
+ 488  F1B3   18                  XGDX
+ 489  F1B4   27 08               BEQ     DUMP23          ; NULL: DANN KEINE AUFFUELLUNG NOETIG
+ 490  F1B6   BD F3 D2            JSR     OUTDM           ; ZWEI STRICHE AUSGEBEN
+ 491  F1B9   BD F3 E0            JSR     TRENNZ          ; TRENNZEICHEN (1 ODER 2 SPACE) AUSGEBEN
+ 492  F1BC   20 F1               BRA     DUMP21
+ 493  F1BE               
+ 494  F1BE   BD F3 CE    DUMP23  JSR     OUTS            ; ABSTANDSHALTER FUER ASCII-AUSGABE
+ 495  F1C1   FC 3F BE            LDD     YHI
+ 496  F1C4   C4 F0               ANDB    #$F0
+ 497  F1C6   18                  XGDX    
+ 498  F1C7   BC 3F BE    DUMP3   CPX     YHI             ; NORMALISIERTE = RICHTIGE STARTADRESSE ?
+ 499  F1CA   27 06               BEQ     DUMP32
+ 500  F1CC   BD F3 CE            JSR     OUTS            ; NEIN, DANN SPACE AUSGEBEN
+ 501  F1CF   08                  INX
+ 502  F1D0   20 F5               BRA     DUMP3
+ 503  F1D2               
+ 504  F1D2   A6 00       DUMP32  LDAA    ,X              ; EIN BYTE HOLEN
+ 505  F1D4   4C                  INCA                    ; BYTE FUER ASCII-TEST ERHOEHEN
+ 506  F1D5   84 7F               ANDA    #$7F            ;        UND STEUERZEICHEN MASKIEREN
+ 507  F1D7   81 20               CMPA    #$20            ; > ALS SPACE ?
+ 508  F1D9   22 02               BHI     ASCOUT          ; JA
+ 509  F1DB   86 2F               LDAA    #'.+1           ; FUELL-ZEICHEN
+ 510  F1DD   4A          ASCOUT  DECA                    ; ORIGINALZEICHEN WIEDER ERZEUGEN
+ 511  F1DE   BD F3 99            JSR     WRITE           ;        UND AUSGEBEN
+ 512  F1E1   BC 3F C0            CPX     ZHI             ;    ENDADRESSE ERREICHT ?
+ 513  F1E4   27 0D               BEQ     DMPEND          ; JA, DANN IST ALLES GETAN
+ 514  F1E6   08                  INX
+ 515  F1E7   18                  XGDX
+ 516  F1E8   C5 0F               BITB    #$F             ; EINE ZEILE FERTIG ?
+ 517  F1EA   18                  XGDX
+ 518  F1EB   26 E5               BNE     DUMP32          ; NEIN...
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:00    Page: 14
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 519  F1ED   FF 3F BE            STX     YHI
+ 520  F1F0   7E F1 7A            JMP     DUMP1
+ 521  F1F3               
+ 522  F1F3   39          DMPEND  RTS
+ 523  F1F4               
+ 524  F1F4               
+ 525  F1F4               
+ 526  F1F4               ;----------------------------------------------------------------
+ 527  F1F4               ; STARTEN VON USER-PROGRAMMEN
+ 528  F1F4               ;----------------------------------------------------------------
+ 529  F1F4               
+ 530  F1F4   CE F9 43    GOTO    LDX     #TXTGOT         ; "oto user program at $"
+ 531  F1F7   BD F3 F2            JSR     OUTSTR
+ 532  F1FA   BD F4 5A            JSR     INP4HX          ; STARTADRESSE HOLEN
+ 533  F1FD   24 06               BCC     G1
+ 534  F1FF   CE FA 06            LDX     #CHRERR         ; "??? Invalid character"
+ 535  F202   7E F3 F2            JMP     OUTSTR
+ 536  F205               
+ 537  F205   FE 3F BA    G1      LDX     SPH
+ 538  F208   09                  DEX                     ; X ZEIGT AUF USER-PCH
+ 539  F209   FC 3F BC            LDD     XHI             ; STARTADRESSE NOCHEINMAL LADEN
+ 540  F20C   ED 00               STD     ,X              ;    UND IN USER-PC SCHREIBEN
+ 541  F20E   18                  XGDX
+ 542  F20F   83 00 05            SUBD    #$5             ; AUF USER-F ZEIGEN
+ 543  F212   18                  XGDX
+ 544  F213   0F                  SEI                     ; INTERRUPT SPERREN, DAMIT
+ 545  F214   B6 3F C7            LDAA    SYSFLG          ;    SYSFLG NICHT ZERSTOERT WIRD !
+ 546  F217   8A 01               ORAA    #1              ; USER-MODE
+ 547  F219   B7 3F C7            STAA    SYSFLG          ;    EINSCHALTEN
+ 548  F21C   35                  TXS                     ; USER-SP AUF F-1 SETZEN
+ 549  F21D   3B                  RTI                     ; SPRUNG ZUM ANWENDERPROGRAMM
+ 550  F21E               ;----------------------------------------------------------------
+ 551  F21E               ; HIER ZWISCHEN LAEUFT DAS USER-PROGRAMM
+ 552  F21E               ;----------------------------------------------------------------
+ 553  F21E   30          BREAK   TSX                     ; X ZEIGT AUF USER-F
+ 554  F21F   18                  XGDX
+ 555  F220   C3 00 06            ADDD    #6
+ 556  F223   FD 3F BA            STD     SPH             ; USER-SP VOR DEM EINSPRUNG !
+ 557  F226   8E 3F E7            LDS     #STACK
+ 558  F229   0E                  CLI                     ; INTERRUPT WIEDER FREIGEBEN
+ 559  F22A   BD F3 D8            JSR     OUTCL
+ 560  F22D   CE FA 1B            LDX     #BRKMSG         ; "Breakpoint entcountered at PC=$"
+ 561  F230   BD F3 F2            JSR     OUTSTR
+ 562  F233   FE 3F BA            LDX     SPH
+ 563  F236   09                  DEX                     ; ADRESSIERE USER-PCH
+ 564  F237   EE 00               LDX     ,X
+ 565  F239   09                  DEX                     ; ADRESSE DES BREAKPOINTS (SWI)
+ 566  F23A   BD F4 01            JSR     OUTX            ;       AUSGEBEN
+ 567  F23D   0F          BREAK1  SEI                     ; INTERRUPT SPERREN, DAMIT
+ 568  F23E   B6 3F C7            LDAA    SYSFLG          ;    SYSFLG NICHT VERAENDERT WIRD !
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:02    Page: 15
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 569  F241   84 FE               ANDA    #$FE            ; USER-MODE LOESCHEN
+ 570  F243   B7 3F C7            STAA    SYSFLG
+ 571  F246   0E                  CLI                     ; INTERRUPT WIEDER FREIGEBEN
+ 572  F247   7E F0 AB            JMP     CONTRL
+ 573  F24A               
+ 574  F24A               
+ 575  F24A               
+ 576  F24A               ;----------------------------------------------------------------
+ 577  F24A               ; LADEN VON MOTOROLA RECORDS
+ 578  F24A               ;----------------------------------------------------------------
+ 579  F24A               
+ 580  F24A   CE F9 59    LOAD    LDX     #TXTLOA         ;"oad MOTOROLA records"
+ 581  F24D   BD F3 F2            JSR     OUTSTR
+ 582  F250   BD F3 D8    LOAD2   JSR     OUTCL
+ 583  F253   BD F3 BE    LOAD3   JSR     ECHO            ; WARTE AUF EIN ZEICHEN
+ 584  F256   81 53               CMPA    #'S             ; ES MUSS DAS MOTOROLA 'S' SEIN !
+ 585  F258   26 F9               BNE     LOAD3           ;        ALLES ANDERE IGNORIEREN
+ 586  F25A   BD F3 BE            JSR     ECHO            ; OK, WIR HABEN ES BEKOMMEN
+ 587  F25D   81 39               CMPA    #'9             ; EINE '9' KENNZEICHNET ENDE
+ 588  F25F   27 4A               BEQ     LOAD17
+ 589  F261   81 31               CMPA    #'1             ; EINE '1' KENNZEICHNET DATEN
+ 590  F263   26 EE               BNE     LOAD3           ; ALLES ANDERE IGNORIEREN WIR (AUCH '0')
+ 591  F265   7F 3F C5            CLR     CKSUM           ; AM ANFANG DES RECORDS: CHECKSUMME LOESCHEN
+ 592  F268   BD F4 3F            JSR     INP2HA          ; LESE EIN BYTE
+ 593  F26B   24 05               BCC     LOAD10
+ 594  F26D   CE FA 06    LOADER  LDX     #CHRERR         ; "??? Invalid character"
+ 595  F270   20 36               BRA     LOAD16
+ 596  F272               
+ 597  F272   80 02       LOAD10  SUBA    #2
+ 598  F274   B7 3F C6            STAA    BYTECT          ; BYTE ZAEHLER
+ 599  F277   BD F4 5A            JSR     INP4HX          ; STARTADRESSE ERZEUGEN (-> ADD CKSUM)
+ 600  F27A   25 F1               BCS     LOADER          ; FEHLER!
+ 601  F27C   BD F4 3F    LOAD11  JSR     INP2HA          ; LESE DATENBYTE (-> ADD CKSUM)
+ 602  F27F   25 EC               BCS     LOADER          ; FEHLER!
+ 603  F281   7A 3F C6            DEC     BYTECT          ; DATENBYTE ZAEHLEN, EIN RECORD FERTIG ?
+ 604  F284   27 1A               BEQ     LOAD15          ; JA:   DANN CHECKSUMME TESTEN
+ 605  F286   A7 00               STAA    ,X              ; NEIN: SPEICHERE DATENBYTE
+ 606  F288   A1 00               CMPA    ,X              ; MEMORY OK ?
+ 607  F28A   27 11               BEQ     LOAD12          ; JA, DANN WEITER...
+ 608  F28C   3C                  PSHX                    ; LETZTE ADRESSE RETTEN
+ 609  F28D   CE F9 C1            LDX     #ERRMSG         ; "??? Memory did not change"
+ 610  F290   BD F3 F2            JSR     OUTSTR
+ 611  F293   CE F9 DC            LDX     #AT             ; " at "
+ 612  F296   BD F3 F2            JSR     OUTSTR
+ 613  F299   38                  PULX
+ 614  F29A   7E F4 01            JMP     OUTX            ; FEHLERADRESSE AUSGEBEN
+ 615  F29D               
+ 616  F29D   08          LOAD12  INX                     ; NAECHSTE ADRESSE
+ 617  F29E   20 DC               BRA     LOAD11
+ 618  F2A0               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:04    Page: 16
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 619  F2A0   7C 3F C5    LOAD15  INC     CKSUM           ; CHECKSUMME OK ?
+ 620  F2A3   27 AB               BEQ     LOAD2           ; JA, DANN WEITER...
+ 621  F2A5   CE F9 F2            LDX     #CKSERR         ; "??? Checksum error"
+ 622  F2A8   BD F3 F2    LOAD16  JSR     OUTSTR
+ 623  F2AB   39          LOAD17  RTS
+ 624  F2AC               
+ 625  F2AC               
+ 626  F2AC               
+ 627  F2AC               ;----------------------------------------------------------------
+ 628  F2AC               ; MEMORY ANSEHEN UND/ODER VERAENDERN 
+ 629  F2AC               ;----------------------------------------------------------------
+ 630  F2AC               
+ 631  F2AC   CE F9 6E    MEMORY  LDX     #TXTMEM         ; "emory display at $"
+ 632  F2AF   BD F3 F2            JSR     OUTSTR
+ 633  F2B2   BD F4 6D            JSR     SETBYT          ; BYTE-OPERATION VOREINSTELLEN
+ 634  F2B5   BD F4 5A            JSR     INP4HX          ; MEMORY-ADRESSE HOLEN
+ 635  F2B8   24 09               BCC     SAMEA           ; GUELTIGE HEX-EINGABE
+ 636  F2BA   C1 52               CMPB    #'R             ; REGISTER AUSGABE ?
+ 637  F2BC   27 4C               BEQ     SUBC
+ 638  F2BE   C1 54               CMPB    #'T             ; TEXT EINGABE ?
+ 639  F2C0   27 48               BEQ     SUBC
+ 640  F2C2   39                  RTS
+ 641  F2C3               
+ 642  F2C3   FF 3F C0    SAMEA   STX     ZHI             ; EINGEGEBENE ADRESSE RETTEN
+ 643  F2C6   CE F5 22            LDX     #SAMEAD         ; ADRESSE OEFFNEN
+ 644  F2C9   20 60               BRA     SCALL
+ 645  F2CB               
+ 646  F2CB               ;-----------------------------
+ 647  F2CB               ;       SUBCOMMAND INTERPRETER
+ 648  F2CB               ;-----------------------------
+ 649  F2CB               
+ 650  F2CB   BD F4 3F    SUBCMD  JSR     INP2HA          ; HOLE BYTE ODER LETZTEN BUCHSTABEN
+ 651  F2CE   25 3A               BCS     SUBC            ; NEUES KOMMANDO EINGEGEBEN
+ 652  F2D0   F6 3F C7            LDAB    SYSFLG
+ 653  F2D3   C5 04               BITB    #%00000100      ; BYTE-OPERATION ?
+ 654  F2D5   27 16               BEQ     STOB            ; JA...
+ 655  F2D7   BD F4 5E            JSR     INPS4X          ; NEIN: REST VOM WORT HOLEN
+ 656  F2DA   25 2E               BCS     SUBC            ; NEUES KOMMANDO EINGEGEBEN
+ 657  F2DC   FC 3F C0            LDD     ZHI             ; AKTUELLE ADRESSE LADEN
+ 658  F2DF   18                  XGDX
+ 659  F2E0   ED 00               STD     ,X              ; WORT SPEICHERN
+ 660  F2E2   A1 00               CMPA    ,X              ; HIGHER BYTE IM SPEICHER OK ?
+ 661  F2E4   26 10               BNE     MEMERR          ; NEIN...
+ 662  F2E6   08                  INX
+ 663  F2E7   E1 00               CMPB    ,X              ; LOWER BYTE IM SPEICHER OK ?
+ 664  F2E9   26 0B               BNE     MEMERR          ; NEIN...
+ 665  F2EB   20 11               BRA     STO
+ 666  F2ED               
+ 667  F2ED   FE 3F C0    STOB    LDX     ZHI             ; AKTUELLE ADRESSE LADEN
+ 668  F2F0   A7 00               STAA    ,X              ; BYTE SPEICHERN
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:10    Page: 17
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 669  F2F2   A1 00               CMPA    ,X              ; SPEICHER OK ?
+ 670  F2F4   27 08               BEQ     STO
+ 671  F2F6   CE F9 C3    MEMERR  LDX     #CHGERR         ; "??? Memory did not change"
+ 672  F2F9   BD F3 F2            JSR     OUTSTR
+ 673  F2FC   20 07               BRA     SAME
+ 674  F2FE               
+ 675  F2FE   08          STO     INX                     ; NAECHSTE ADRESSE EINSTELLEN
+ 676  F2FF   FF 3F C0            STX     ZHI             ;    UND ADRESSE RETTEN
+ 677  F302   BD F4 6D            JSR     SETBYT          ; BYTE-MODE SETZEN
+ 678  F305   CE F5 22    SAME    LDX     #SAMEAD         ; ADRESSE MIT INHALT OEFFNEN
+ 679  F308   20 21               BRA     SCALL
+ 680  F30A               
+ 681  F30A   CE FA 94    SUBC    LDX     #MEMTAB         ; START DER BEFEHLSTABELLE
+ 682  F30D   17                  TBA                     ; EINGABE RETTEN
+ 683  F30E   5F                  CLRB
+ 684  F30F   A1 00       SEASC   CMPA    ,X              ; ZEICHEN GEFUNDEN ?
+ 685  F311   27 11               BEQ     MFOUND
+ 686  F313   08                  INX
+ 687  F314   5C                  INCB
+ 688  F315   C1 0A               CMPB    #MEMVEK-MEMTAB  ; LAENGE DER BEFEHLSTABELLE
+ 689  F317   26 F6               BNE     SEASC
+ 690  F319   CE FA 06    MCERR   LDX     #CHRERR         ; "??? Invalid character"
+ 691  F31C   BD F3 F2            JSR     OUTSTR
+ 692  F31F   CE F5 22            LDX     #SAMEAD         ; GLEICHE ADRESSE NOCHEINMAL OEFFNEN
+ 693  F322   20 07               BRA     SCALL
+ 694  F324               
+ 695  F324   58          MFOUND  ASLB                    ; WORTOFFSET ERZEUGEN
+ 696  F325   CE FA 9E            LDX     #MEMVEK         ; TABELLENSTART LADEN,
+ 697  F328   3A                  ABX                     ;    OFFSET ADDIEREN
+ 698  F329   EE 00               LDX     ,X              ;    UND SPRUNGADRESSE LADEN
+ 699  F32B   AD 00       SCALL   JSR     ,X              ; UNTERKOMMANDO AUSFUEHREN
+ 700  F32D   24 9C               BCC     SUBCMD
+ 701  F32F   20 D9               BRA     SUBC
+ 702  F331               
+ 703  F331   31          MEMEND  INS                     ; RUECKSPRUNGADRESSE IN DEN SUBCOMMAND-
+ 704  F332   31                  INS                     ;    INTERPRETER ENTFERNEN UND RUECK-
+ 705  F333   39                  RTS                     ;    SPRUNG IN DIE HAUTKOMMANDOEBENE
+ 706  F334               
+ 707  F334               
+ 708  F334               ;----------------------------------------------------------------
+ 709  F334               ; AUSGABE DER USER-REGISTER
+ 710  F334               ;----------------------------------------------------------------
+ 711  F334               
+ 712  F334   CE F9 81    CPUREG  LDX     #TXTREG         ; "egister dump: "
+ 713  F337   BD F3 F2            JSR     OUTSTR
+ 714  F33A   CE FA B9    USRREG  LDX     #FREG           ; "F="
+ 715  F33D   BD F3 F2            JSR     OUTSTR
+ 716  F340   FC 3F BA            LDD     SPH             ; LADE USER-SP
+ 717  F343   83 00 06            SUBD    #6              ; ZEIGE AUF USER-F
+ 718  F346   18                  XGDX
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:14    Page: 18
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 719  F347   E6 00               LDAB    ,X              ; LADE USER-F-REGISTER
+ 720  F349   08                  INX
+ 721  F34A   3C                  PSHX                    ; X ZEIGT SCHON AUF USER-B REGISTER
+ 722  F34B   CE FA B2            LDX     #FLAGS          ; FLAG TABLE
+ 723  F34E   58                  ASLB                    ; 2 BITS IM F-REGISTER
+ 724  F34F   58                  ASLB                    ;    ABTRENNEN
+ 725  F350   A6 00       REGLOP  LDAA    ,X              ; LADE FLAG-BUCHSTABEN, FERTIG ?
+ 726  F352   27 0B               BEQ     ENDFLG          ; JA
+ 727  F354   08                  INX
+ 728  F355   58                  ASLB                    ; F-BIT GESETZT ?
+ 729  F356   25 02               BCS     FLGOUT          ; JA
+ 730  F358   86 2E               LDAA    #'.             ; NEIN: LADE CLR-ZEICHEN
+ 731  F35A   BD F3 99    FLGOUT  JSR     WRITE           ;    UND GEBE ES AUS
+ 732  F35D   20 F1               BRA     REGLOP
+ 733  F35F               
+ 734  F35F   BD F3 CE    ENDFLG  JSR     OUTS
+ 735  F362   CE FA BC            LDX     #BREG           ; ASCII-TABELLE MIT REGISTERNAMEN
+ 736  F365   FF 3F BE            STX     YHI
+ 737  F368   38                  PULX                    ; ADRESSE VOM USER-B REGISTER
+ 738  F369   BD F6 01    CONREG  JSR     REGOUT
+ 739  F36C   3A                  ABX                     ; NEUE ADRESSE SETZEN
+ 740  F36D   3C                  PSHX
+ 741  F36E   FE 3F BE            LDX     YHI
+ 742  F371   09                  DEX
+ 743  F372   6D 00               TST     ,X              ; LETZE AUSGABE SP ?
+ 744  F374   26 0A               BNE     NOTSP           ; NEIN...
+ 745  F376   38                  PULX
+ 746  F377   FE 3F BA            LDX     SPH             ; ZEIGE AUF
+ 747  F37A   09                  DEX                     ;    USER-PCH
+ 748  F37B   3C                  PSHX
+ 749  F37C   FE 3F BE            LDX     YHI
+ 750  F37F   09                  DEX
+ 751  F380   08          NOTSP   INX
+ 752  F381   6D 00               TST     ,X              ; ENDE DER REGISTERAUSGABE ?
+ 753  F383   38                  PULX
+ 754  F384   2A E3               BPL     CONREG          ; NEIN...
+ 755  F386   39          DONREG  RTS
+ 756  F387               
+ 757  F387               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:18    Page: 19
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 758  F387                       .PAGE
+ 759  F387               ;****************************************************************
+ 760  F387               ;       ALLGEMEINE UNTERPROGRAMME
+ 761  F387               ;****************************************************************
+ 762  F387               
+ 763  F387               
+ 764  F387               ;----------------------------------------------------------------
+ 765  F387               ; TERMINALEINGABE
+ 766  F387               ;----------------------------------------------------------------
+ 767  F387               
+ 768  F387   B6 3F C7    READ    LDAA    SYSFLG          ; ZEICHEN EMPFANGEN ?
+ 769  F38A   2A FB               BPL     READ            ; NEIN...
+ 770  F38C   0F                  SEI                     ; JA:   SPERRE INTERRUPT
+ 771  F38D   84 3F               ANDA    #$3F            ; RDRF UND ORFE LOESCHEN
+ 772  F38F   B7 3F C7            STAA    SYSFLG
+ 773  F392   B6 3F C4            LDAA    RXDATA          ; ASCII-ZEICHEN LADEN
+ 774  F395   0E                  CLI                     ; INTERRUPTS WIEDER FREIGEBEN   
+ 775  F396   84 7F               ANDA    #$7F            ; PARITY-BIT ABTRENNEN
+ 776  F398   39                  RTS
+ 777  F399               
+ 778  F399               
+ 779  F399               
+ 780  F399               ;----------------------------------------------------------------
+ 781  F399               ; TERMINALAUSGABE (MIT XON/XOFF HANDSHAKE)
+ 782  F399               ;----------------------------------------------------------------
+ 783  F399               
+ 784  F399   36          WRITE   PSHA                    ; ZEICHEN RETTEN
+ 785  F39A   96 11       WR1     LDAA    TRCSR
+ 786  F39C   84 20               ANDA    #%00100000      ; TX SENDEBEREIT ?
+ 787  F39E   27 FA               BEQ     WR1             ; NEIN...
+ 788  F3A0   7D 3F C7            TST     SYSFLG          ; ZEICHEN EMPFANGEN ?
+ 789  F3A3   2A 11               BPL     WR2             ; NEIN...
+ 790  F3A5   8D E0               BSR     READ
+ 791  F3A7   81 13               CMPA    #CTRLS          ; AUSGABE ANHALTEN ?
+ 792  F3A9   26 0B               BNE     WR2             ; NEIN...
+ 793  F3AB   7D 3F C7    WR3     TST     SYSFLG          ; JA:   AUF CTRL/Q WARTEN
+ 794  F3AE   2A FB               BPL     WR3
+ 795  F3B0   8D D5               BSR     READ
+ 796  F3B2   81 11               CMPA    #CTRLQ          ; AUSGABE WEITERLAUFEN LASSEN ?
+ 797  F3B4   26 F5               BNE     WR3             ; NEIN...
+ 798  F3B6   32          WR2     PULA
+ 799  F3B7   36                  PSHA
+ 800  F3B8   84 7F               ANDA    #$7F            ; NUR 7 BIT ASCII SENDEN !
+ 801  F3BA   97 13               STAA    TDR             ; ASCII-ZEICHEN SENDEN
+ 802  F3BC   32                  PULA                    ; ORIGINALZEICHEN LADEN
+ 803  F3BD   39                  RTS
+ 804  F3BE               
+ 805  F3BE               
+ 806  F3BE               
+ 807  F3BE               ;----------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:18    Page: 20
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 808  F3BE               ; TERMINAL EIN-UND AUSGABE
+ 809  F3BE               ;----------------------------------------------------------------
+ 810  F3BE               
+ 811  F3BE   8D C7       ECHO    BSR     READ            ; ZEICHEN LESEN
+ 812  F3C0   81 61               CMPA    #'a             ; KLEINBUCHSTABEN EINGEGEBEN ?
+ 813  F3C2   25 D5               BCS     WRITE           ; NEIN: ZEICHEN AUSGEBEN
+ 814  F3C4   81 7A               CMPA    #'z             ; SONDERZEICHEN ?
+ 815  F3C6   22 D1               BHI     WRITE           ; JA:   ZEICHEN AUSGEBEN
+ 816  F3C8   84 5F               ANDA    #%01011111      ; NEIN: UMWANDLUNG IN GROSSBUCHSTABEN
+ 817  F3CA   20 CD               BRA     WRITE           ; ZEICHEN AUSGEBEN
+ 818  F3CC               
+ 819  F3CC               
+ 820  F3CC               
+ 821  F3CC               ;----------------------------------------------------------------
+ 822  F3CC               ; AUSGABE VON ZWISCHENRAEUMEN (SPACE)
+ 823  F3CC               ;----------------------------------------------------------------
+ 824  F3CC               
+ 825  F3CC   8D 00       OUTDS   BSR     OUTS
+ 826  F3CE   86 20       OUTS    LDAA    #$20
+ 827  F3D0   20 C7               BRA     WRITE
+ 828  F3D2               
+ 829  F3D2               
+ 830  F3D2               
+ 831  F3D2               ;----------------------------------------------------------------
+ 832  F3D2               ; AUSGABE VON VON BINDESTRICHEN (-)
+ 833  F3D2               ;----------------------------------------------------------------
+ 834  F3D2               
+ 835  F3D2   8D 00       OUTDM   BSR     OUTM
+ 836  F3D4   86 2D       OUTM    LDAA    #'-
+ 837  F3D6   20 C1               BRA     WRITE
+ 838  F3D8               
+ 839  F3D8               
+ 840  F3D8               
+ 841  F3D8               ;----------------------------------------------------------------
+ 842  F3D8               ; NEUE ZEILE ANFANGEN (CR, LF)
+ 843  F3D8               ;----------------------------------------------------------------
+ 844  F3D8               
+ 845  F3D8   86 0D       OUTCL   LDAA    #$D             ; WAGENRUECKLAUF
+ 846  F3DA   8D BD               BSR     WRITE
+ 847  F3DC   86 0A               LDAA    #$A             ; ZEILENTRANSPORT
+ 848  F3DE   20 B9               BRA     WRITE
+ 849  F3E0               
+ 850  F3E0               
+ 851  F3E0               
+ 852  F3E0               ;----------------------------------------------------------------
+ 853  F3E0               ; EIN ODER ZWEI TRENNZEICHEN AUSGEBEN
+ 854  F3E0               ;----------------------------------------------------------------
+ 855  F3E0               
+ 856  F3E0   37          TRENNZ  PSHB
+ 857  F3E1   36                  PSHA
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:20    Page: 21
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 858  F3E2   3C                  PSHX
+ 859  F3E3   18                  XGDX
+ 860  F3E4   C4 0F               ANDB    #$F             ; UNTERES HALBBYTE ABTRENNEN
+ 861  F3E6   C1 08               CMPB    #$8             ; MITTE IN DER ZEILE SCHON ERREICHT ?
+ 862  F3E8   26 02               BNE     TRENNO          ; NEIN: 1 SPACE AUSGEBEN
+ 863  F3EA   8D E2               BSR     OUTS            ; JA:   2 SPACE AUSGEBEN
+ 864  F3EC   8D E0       TRENNO  BSR     OUTS
+ 865  F3EE   38                  PULX
+ 866  F3EF   32                  PULA
+ 867  F3F0   33                  PULB
+ 868  F3F1   39                  RTS
+ 869  F3F2               
+ 870  F3F2               
+ 871  F3F2               
+ 872  F3F2               ;----------------------------------------------------------------
+ 873  F3F2               ; AUSGABE EINES STRINGS, INDIZIERT DURCH X-REGISTER
+ 874  F3F2               ;----------------------------------------------------------------
+ 875  F3F2               
+ 876  F3F2   A6 00       OUTSTR  LDAA    ,X              ; INDIZIERTES BYTE LADEN
+ 877  F3F4   27 0A               BEQ     OUTEND
+ 878  F3F6   81 80               CMPA    #$80
+ 879  F3F8   27 DE               BEQ     OUTCL           ; NEGATIVES ENDEZEICHEN = CRLF
+ 880  F3FA   8D 9D               BSR     WRITE           ; ZEICHEN AUSGEBEN
+ 881  F3FC   08                  INX                     ; ADRESSE ERHOEHEN
+ 882  F3FD   4D                  TSTA
+ 883  F3FE   2A F2               BPL     OUTSTR
+ 884  F400   39          OUTEND  RTS
+ 885  F401               
+ 886  F401               
+ 887  F401               
+ 888  F401               ;----------------------------------------------------------------
+ 889  F401               ; GEBE BYTE AUS
+ 890  F401               ;----------------------------------------------------------------
+ 891  F401               
+ 892  F401   FF 3F BC    OUTX    STX     XHI             ; GEBE X-REGISTER AUS
+ 893  F404   CE 3F BC    OUTXHI  LDX     #XHI            ; GEBE INHALT VON XHI AUS
+ 894  F407   8D 00       OUT4H   BSR     OUT2H           ; GEBE ADRESSIERTES WORT AUS
+ 895  F409   A6 00       OUT2H   LDAA    ,X              ; GEBE ADRESSIERTES BYTE AUS
+ 896  F40B   08                  INX
+ 897  F40C   36          OUT2HA  PSHA                    ; GEBE BYTE IM AKKU AUS
+ 898  F40D   8D 07               BSR     BUILDL          ; OUT LEFT HEX CHARACTER
+ 899  F40F   8D 88               BSR     WRITE
+ 900  F411   32                  PULA
+ 901  F412   8D 06               BSR     BUILDR          ; OUT RIGHT HEX CHARACTER
+ 902  F414   20 83               BRA     WRITE
+ 903  F416               
+ 904  F416               
+ 905  F416               
+ 906  F416               ;----------------------------------------------------------------
+ 907  F416               ; AUSGABE DES BYTES IM A-REG
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:24    Page: 22
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 908  F416               ;----------------------------------------------------------------
+ 909  F416               
+ 910  F416   44          BUILDL  LSRA                    ; LINKES NIBBLE
+ 911  F417   44                  LSRA                    ;    EINES 
+ 912  F418   44                  LSRA                    ;    BYTES
+ 913  F419   44                  LSRA                    ;    ERZEUGEN
+ 914  F41A   84 0F       BUILDR  ANDA    #$F             ; RECHTES NIBBLE HERAUSTRENNEN
+ 915  F41C   8B 30               ADDA    #'0             ; ASCII-ZEICHEN ERZEUGEN
+ 916  F41E   81 39               CMPA    #'9             ; ZEICHEN GROESSER ALS ASCII 9 ?
+ 917  F420   23 02               BLS     BUILD           ; NEIN, KEINE KORREKTUR NOETIG
+ 918  F422   8B 07               ADDA    #7              ; PSEUDOTETRADEN ERZEUGEN (A-F)
+ 919  F424   39          BUILD   RTS
+ 920  F425               
+ 921  F425               
+ 922  F425               
+ 923  F425               ;----------------------------------------------------------------
+ 924  F425               ; LESE EINE HEX-ZIFFER, KENNZEICHNE FEHLZEICHEN
+ 925  F425               ;----------------------------------------------------------------
+ 926  F425               
+ 927  F425   BD F3 BE    INPHX   JSR     ECHO
+ 928  F428   16                  TAB                     ; RETTE ZEICHEN FUER VERGLEICH
+ 929  F429   81 30               CMPA    #'0
+ 930  F42B   2D 10               BLT     INERR           ; KEIN HEX
+ 931  F42D   81 39               CMPA    #'9
+ 932  F42F   2F 0A               BLE     IN1HG
+ 933  F431   81 41               CMPA    #'A
+ 934  F433   2D 08               BLT     INERR           ; KEIN HEX
+ 935  F435   81 46               CMPA    #'F
+ 936  F437   2E 04               BGT     INERR           ; KEIN HEX
+ 937  F439   80 07               SUBA    #7
+ 938  F43B   0C          IN1HG   CLC                     ; CY=0 --> KEIN ERROR
+ 939  F43C   39                  RTS
+ 940  F43D               
+ 941  F43D   0D          INERR   SEC                     ; CY=1 --> ERROR
+ 942  F43E   39                  RTS
+ 943  F43F               
+ 944  F43F               
+ 945  F43F               
+ 946  F43F               ;----------------------------------------------------------------
+ 947  F43F               ; EINLESEN EINES BYTES IN DEN AKKU
+ 948  F43F               ;----------------------------------------------------------------
+ 949  F43F               
+ 950  F43F   8D E4       INP2HA  BSR     INPHX           ; EIN HALBBYTE LESEN
+ 951  F441   25 16               BCS     NBYTE2          ; EINGABEFEHLER...
+ 952  F443   48                  ASLA
+ 953  F444   48                  ASLA
+ 954  F445   48                  ASLA
+ 955  F446   48                  ASLA
+ 956  F447   36                  PSHA                    ; 1. TEIL RETTEN
+ 957  F448   8D DB               BSR     INPHX           ; EIN HALBBYTE LESEN
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:26    Page: 23
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+ 958  F44A   25 0C               BCS     NBYTE1          ; EINGABEFEHLER...
+ 959  F44C   84 0F               ANDA    #$F
+ 960  F44E   33                  PULB
+ 961  F44F   1B                  ABA                     ; HEXBYTE ERZEUGEN
+ 962  F450   36                  PSHA                    ; BYTE RETTEN
+ 963  F451   BB 3F C5            ADDA    CKSUM           ; BYTE ZUR PRUEFSUMME ADDIEREN
+ 964  F454   B7 3F C5            STAA    CKSUM           ;         UND ABSPEICHERN
+ 965  F457   0C                  CLC                     ; FEHLERFLAG LOESCHEN
+ 966  F458   32          NBYTE1  PULA                    ; BYTE WIEDER LADEN
+ 967  F459   39          NBYTE2  RTS
+ 968  F45A               
+ 969  F45A               
+ 970  F45A               
+ 971  F45A               ;----------------------------------------------------------------
+ 972  F45A               ; EINLESEN EINES WORTES INS X-REGISTER
+ 973  F45A               ;----------------------------------------------------------------
+ 974  F45A               
+ 975  F45A   8D E3       INP4HX  BSR     INP2HA          ; ERSTES BYTE EINLESEN
+ 976  F45C   25 0E               BCS     NADDR           ; EINGABEFEHLER...
+ 977  F45E   B7 3F BC    INPS4X  STAA    XHI
+ 978  F461   8D DC               BSR     INP2HA
+ 979  F463   25 07               BCS     NADDR           ; EINGABEFEHLER...
+ 980  F465   B7 3F BD            STAA    XLO
+ 981  F468   FE 3F BC            LDX     XHI             ; 16 BIT WERT IM X-REGISTER
+ 982  F46B   0C                  CLC
+ 983  F46C   39          NADDR   RTS
+ 984  F46D               
+ 985  F46D               
+ 986  F46D               
+ 987  F46D               ;----------------------------------------------------------------
+ 988  F46D               ; SETZE BYTE-OPERATION (OEFFNEN/SPEICHERN)
+ 989  F46D               ;----------------------------------------------------------------
+ 990  F46D               
+ 991  F46D   0F          SETBYT  SEI
+ 992  F46E   B6 3F C7            LDAA    SYSFLG
+ 993  F471   84 FB               ANDA    #%11111011      ; BYTE-OPERATION EINSTELLEN
+ 994  F473   B7 3F C7            STAA    SYSFLG
+ 995  F476   0E                  CLI
+ 996  F477   39                  RTS
+ 997  F478               
+ 998  F478               
+ 999  F478               
+1000  F478               ;----------------------------------------------------------------
+1001  F478               ; SETZE WORT-OPERATION (OEFFNEN/SPEICHERN)
+1002  F478               ;----------------------------------------------------------------
+1003  F478               
+1004  F478   0F          SETWOR  SEI
+1005  F479   B6 3F C7            LDAA    SYSFLG
+1006  F47C   8A 04               ORAA    #%00000100      ; WORT-OPERATION EINSTELLEN
+1007  F47E   B7 3F C7            STAA    SYSFLG
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:26    Page: 24
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1008  F481   0E                  CLI
+1009  F482   39                  RTS
+1010  F483               
+1011  F483               
+1012  F483               
+1013  F483               ;----------------------------------------------------------------
+1014  F483               ; TEXTEINGABE AB AKTUELLER ADRESSE
+1015  F483               ;----------------------------------------------------------------
+1016  F483               
+1017  F483   CE F9 90    TXTINP  LDX     #TXTMSG         ; "ext-input. (Exit with CTRL/C)"
+1018  F486   BD F3 F2            JSR     OUTSTR
+1019  F489   0F                  SEI
+1020  F48A   B6 3F C7            LDAA    SYSFLG
+1021  F48D   8A 08               ORAA    #%00001000      ; CTRL/C-SPERRE SETZEN
+1022  F48F   B7 3F C7            STAA    SYSFLG
+1023  F492   0E                  CLI
+1024  F493   BD F3 87    TXTIN   JSR     READ            ; ASCII-ZEICHEN HOLEN
+1025  F496   81 03               CMPA    #CTRLC          ; ABBRUCH ?
+1026  F498   26 03               BNE     TXTCHK          ; NEIN...
+1027  F49A   7E F5 22            JMP     SAMEAD          ; JA:   LETZTE ADRESSE OEFFNEN
+1028  F49D               
+1029  F49D   81 7F       TXTCHK  CMPA    #DELETE         ; LETZTES ZEICHEN LOESCHEN ?
+1030  F49F   26 0F               BNE     TXTOUT
+1031  F4A1   FE 3F C0            LDX     ZHI
+1032  F4A4   09                  DEX                     ; AKTUELLE ADRESSE VERMINDERN
+1033  F4A5   FF 3F C0            STX     ZHI
+1034  F4A8   CE F9 BD            LDX     #DELTXT         ; <BS><SPACE><BS> AUSGEBEN
+1035  F4AB   BD F3 F2            JSR     OUTSTR
+1036  F4AE   20 E3               BRA     TXTIN
+1037  F4B0               
+1038  F4B0   BD F3 99    TXTOUT  JSR     WRITE           ;    UND ECHO AUSGEBEN
+1039  F4B3   FE 3F C0            LDX     ZHI             ; AKTUELLE ADRESSE LADEN
+1040  F4B6   A7 00               STAA    ,X              ;    UND ZEICHEN SPEICHERN
+1041  F4B8   A1 00               CMPA    ,X              ; MEMORY OK ?
+1042  F4BA   27 0F               BEQ     TXTOK           ; JA...
+1043  F4BC   31                  INS                     ; RUECKSPRUNGSADRESSE VOM
+1044  F4BD   31                  INS                     ;    STACK ENTFERNEN
+1045  F4BE   0F                  SEI
+1046  F4BF   B6 3F C7            LDAA    SYSFLG
+1047  F4C2   84 F7               ANDA    #%11110111      ; CTRL/C-FLAG AUF NORMAL STELLEN
+1048  F4C4   B7 3F C7            STAA    SYSFLG
+1049  F4C7   0E                  CLI
+1050  F4C8   7E F2 F6            JMP     MEMERR          ; FEHLER MELDEN
+1051  F4CB               
+1052  F4CB   08          TXTOK   INX
+1053  F4CC   FF 3F C0            STX     ZHI
+1054  F4CF   20 C2               BRA     TXTIN
+1055  F4D1               
+1056  F4D1               
+1057  F4D1               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:32    Page: 25
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1058  F4D1               ;----------------------------------------------------------------
+1059  F4D1               ; NEUE ADRESSE OEFFNEN
+1060  F4D1               ;----------------------------------------------------------------
+1061  F4D1               
+1062  F4D1   CE F9 6E    NEWADR  LDX     #TXTMEM         ; "emory display at $"
+1063  F4D4   BD F3 F2            JSR     OUTSTR
+1064  F4D7   BD F4 5A            JSR     INP4HX          ; MEMORY-ADRESSE HOLEN
+1065  F4DA   25 05               BCS     NEWC            ; NEUES KOMMANDO EINGEGEBEN...
+1066  F4DC   FF 3F C0            STX     ZHI             ; NEUE ADRESSE SPEICHERN
+1067  F4DF   20 41               BRA     SAMEAD
+1068  F4E1               
+1069  F4E1   39          NEWC    RTS
+1070  F4E2               
+1071  F4E2               
+1072  F4E2               
+1073  F4E2               ;----------------------------------------------------------------
+1074  F4E2               ; ADRESSE INDIREKT OEFFNEN
+1075  F4E2               ;----------------------------------------------------------------
+1076  F4E2               
+1077  F4E2   FE 3F C0    INDIAD  LDX     ZHI             ; AKTUELLE ADRESSE LADEN
+1078  F4E5   FF 3F C2            STX     SCRATW          ;         UND RETTEN
+1079  F4E8   EE 00               LDX     ,X              ;    UND DANN INDIREKT OEFFNEN
+1080  F4EA   FF 3F C0            STX     ZHI
+1081  F4ED   20 33               BRA     SAMEAD
+1082  F4EF               
+1083  F4EF               
+1084  F4EF               
+1085  F4EF               ;----------------------------------------------------------------
+1086  F4EF               ; LETZTE GEOEFFNETE ADRESSE OEFFNEN
+1087  F4EF               ;----------------------------------------------------------------
+1088  F4EF               
+1089  F4EF   FE 3F C2    OFFSET  LDX     SCRATW          ; LETZTE ADRESSE LADEN
+1090  F4F2   FF 3F C0            STX     ZHI
+1091  F4F5   20 2B               BRA     SAMEAD
+1092  F4F7               
+1093  F4F7               
+1094  F4F7               
+1095  F4F7               ;----------------------------------------------------------------
+1096  F4F7               ; ADRESSE MIT 8-BIT RELATIV OEFFNEN
+1097  F4F7               ;----------------------------------------------------------------
+1098  F4F7               
+1099  F4F7   FE 3F C0    RELBYT  LDX     ZHI
+1100  F4FA   FF 3F C2            STX     SCRATW          ; LETZTE ADRESSE MERKEN
+1101  F4FD   4F                  CLRA                    ; POSITIVEN OFFSET VOREINSTELLEN
+1102  F4FE   E6 00               LDAB    ,X              ; ADRESSIERTES BYTE LADEN
+1103  F500   2A 01               BPL     CMPOFS
+1104  F502   4A                  DECA                    ; HIGHER BYTE AUF $FF SETZEN
+1105  F503   FF 3F C0    CMPOFS  STX     ZHI
+1106  F506   F3 3F C0            ADDD    ZHI             ; JETZT HABEN WIR DIE NEUE ADRESSE
+1107  F509   FD 3F C0            STD     ZHI
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:34    Page: 26
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1108  F50C               
+1109  F50C               ;----------------------------------------------------------------
+1110  F50C               ; NAECHSTE, LETZTE ODER GLEICHE ADRESSE OEFFNEN
+1111  F50C               ;----------------------------------------------------------------
+1112  F50C               
+1113  F50C   FE 3F C0    NEXTAD  LDX     ZHI             ; AKTUELLE ADRESSE LADEN
+1114  F50F   08                  INX
+1115  F510   08                  INX
+1116  F511   FF 3F C0            STX     ZHI
+1117  F514   B6 3F C7            LDAA    SYSFLG          ; WORT ADRESSIERT ?
+1118  F517   85 04               BITA    #%00000100
+1119  F519   26 07               BNE     SAMEAD          ; JA:   ADR = ADR + 2
+1120  F51B   FE 3F C0    LASTAD  LDX     ZHI             ; AKTUELLE ADRESSE LADEN
+1121  F51E   09                  DEX
+1122  F51F   FF 3F C0            STX     ZHI
+1123  F522   BD F3 D8    SAMEAD  JSR     OUTCL           ; NEUE ZEILE ANFANGEN
+1124  F525   BD F4 6D            JSR     SETBYT          ; MARKIERE NAECHSTE OPERATION ALS BYTE
+1125  F528   FE 3F C0            LDX     ZHI
+1126  F52B   8C 3F BA            CPX     #SPH            ; MOMENTANE ADRESSE = USER-SP ?
+1127  F52E   26 0B               BNE     TRYCPU          ; NEIN...
+1128  F530   FF 3F BC            STX     XHI
+1129  F533   CE FA C5            LDX     #SPREG          ; LADE STRING-ADRESSE DES SP
+1130  F536   FF 3F BE            STX     YHI
+1131  F539   20 36               BRA     OPENRG
+1132  F53B               
+1133  F53B   FC 3F BA    TRYCPU  LDD     SPH             ; USER STACKPOINTER LADEN
+1134  F53E   83 00 06            SUBD    #6              ; AUF USER-F
+1135  F541   FD 3F BC            STD     XHI             ;    UND ADRESSE RETTEN
+1136  F544   FC 3F C0            LDD     ZHI             ; [MOMENTANE ADRESSE]
+1137  F547   B3 3F BC            SUBD    XHI             ;       - [USER-REG-ADRESSE]
+1138  F54A   25 36               BCS     OPENAD          ; MOMENTANE ADRESSE IST KLEINER
+1139  F54C   4D                  TSTA
+1140  F54D   26 33               BNE     OPENAD          ; MOMENTANE ADRESSE IST GROESSER
+1141  F54F   C1 06               CMPB    #6
+1142  F551   22 2F               BHI     OPENAD          ; MOMENTANE ADRESSE IST GROESSER
+1143  F553   CE FA B9            LDX     #FREG           ; ADRESSE DER REGISTERLISTE
+1144  F556   17                  TBA                     ; OFFSET IN AKKU A RETTEN
+1145  F557   5F                  CLRB
+1146  F558   FF 3F BE    NAMEF   STX     YHI
+1147  F55B   FE 3F BC            LDX     XHI
+1148  F55E   3A                  ABX                     ; AUF NAECHSTE USER-REG-ADRESSE ZEIGEN
+1149  F55F   FF 3F BC            STX     XHI
+1150  F562   FE 3F BE            LDX     YHI             ; STRINGPOSITION LADEN
+1151  F565   08          OPENR   INX
+1152  F566   6D 00               TST     ,X              ; POSITIV ?
+1153  F568   2A FB               BPL     OPENR           ; JA:   ENDE SUCHEN...
+1154  F56A   08                  INX                     ; X ZEIGT AUF REGISTERGROESSE
+1155  F56B   E6 00               LDAB    ,X              ; REGISTERGROESSE IN BYTE LADEN
+1156  F56D   08                  INX                     ; X ZEIGT AUF 1. REGISTERBUCHSTABEN
+1157  F56E   10                  SBA             
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:36    Page: 27
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1158  F56F   2A E7               BPL     NAMEF           ; SUCHE, BIS OFFSET<0 WIRD
+1159  F571   FE 3F BC    OPENRG  LDX     XHI             ; EFFEKTIVE USER-REG-ADRESSE
+1160  F574   FF 3F C0            STX     ZHI             ;    ALS AKTUELLE ADRESSE UEBERNEHMEN
+1161  F577   BD F6 01            JSR     REGOUT          ; REGISTER NAME & INHALT AUSGEBEN
+1162  F57A   5A                  DECB                    ; 16-BIT REGISTER ?
+1163  F57B   27 03               BEQ     R8BIT           ; NEIN...
+1164  F57D   BD F4 78            JSR     SETWOR
+1165  F580   0C          R8BIT   CLC                     ; KEIN BEFEHLSBUCHSTABE EINGEGEBEN !
+1166  F581   39                  RTS
+1167  F582               
+1168  F582               ; STANDARD-AUSGABE DER ADRESSE MIT BYTE-INHALT
+1169  F582               
+1170  F582   FE 3F C0    OPENAD  LDX     ZHI             ; AKTUELLE ADRESSE LADEN
+1171  F585   BD F4 01            JSR     OUTX            ;       UND AUSGEBEN
+1172  F588   86 3D               LDAA    #'=             ; OPEN
+1173  F58A   BD F0 09            JSR     TEROUT          ;         INDIKATOR AUSGEBEN
+1174  F58D   FE 3F C0            LDX     ZHI             ; ADRESSE NOCHEINMAL LADEN
+1175  F590   BD F4 09            JSR     OUT2H           ; ADRESSIERTES BYTE
+1176  F593   BD F3 CE            JSR     OUTS            ;       UND SPACE AUSGEBEN
+1177  F596   0C                  CLC                     ; KEIN BEFEHLSBUCHSTABE EINGEGEBEN !
+1178  F597   39                  RTS
+1179  F598               
+1180  F598               
+1181  F598               
+1182  F598               ;----------------------------------------------------------------
+1183  F598               ; OEFFNEN EINES USER-REGISTERS
+1184  F598               ;----------------------------------------------------------------
+1185  F598               
+1186  F598   CE F9 AE    CNGREG  LDX     #REGNAM         ; "egister name? "
+1187  F59B   BD F3 F2            JSR     OUTSTR
+1188  F59E   BD F3 BE            JSR     ECHO            ; REGISTER-BUCHSTABE HOLEN
+1189  F5A1   81 53               CMPA    #'S             ; STACKPOINTER ?
+1190  F5A3   26 0E               BNE     CNG1            ; NEIN...
+1191  F5A5   CE FA C5            LDX     #SPREG          ; JA:   LADE STRING-ADRESSE DES SP
+1192  F5A8   FF 3F BE            STX     YHI
+1193  F5AB   CE 3F BA            LDX     #SPH            ; AKTUELLE ADRESSE AUF USER-SP SETZEN
+1194  F5AE   FF 3F BC            STX     XHI
+1195  F5B1   20 3B               BRA     FOUNDR
+1196  F5B3               
+1197  F5B3   36          CNG1    PSHA                    ; EINGEGEBENEN BUCHSTABEN RETTEN
+1198  F5B4   FC 3F BA            LDD     SPH             ; USER STACKPOINTER LADEN
+1199  F5B7   83 00 06            SUBD    #6              ; AUF USER-F
+1200  F5BA   FD 3F BC            STD     XHI             ;    UND ADRESSE RETTEN
+1201  F5BD   CE FA B9            LDX     #FREG           ; STRINGADRESSE
+1202  F5C0   FF 3F BE            STX     YHI
+1203  F5C3   32                  PULA                    ; EINGEGEBENEN BUCHSTABEN LADEN
+1204  F5C4   5F                  CLRB
+1205  F5C5   FE 3F BE    SEARRG  LDX     YHI             ; STRINGPOINTER LADEN
+1206  F5C8   A1 00               CMPA    ,X              ; REGISTERNAMEN GEFUNDEN ?
+1207  F5CA   27 22               BEQ     FOUNDR
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:38    Page: 28
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1208  F5CC   08          INCRP   INX
+1209  F5CD   6D 00               TST     ,X              ; ENDE DES NAMENS GEFUNDEN ?
+1210  F5CF   2A FB               BPL     INCRP
+1211  F5D1   08                  INX                     ; AUF REGISTERGROESSE ZEIGEN
+1212  F5D2   E6 00               LDAB    ,X              ;    UND LADEN
+1213  F5D4   08                  INX
+1214  F5D5   6D 00               TST     ,X              ; ENDE DER REGISTERLISTE ?
+1215  F5D7   2B 0C               BMI     NOREGF          ; JA, EINGABE WAR UNGUELTIG !
+1216  F5D9   FF 3F BE            STX     YHI             ; STRINGPOINTER RETTEN
+1217  F5DC   FE 3F BC            LDX     XHI
+1218  F5DF   3A                  ABX                     ; AUF NAECHSTE USER-REG-ADRESSE ZEIGEN
+1219  F5E0   FF 3F BC            STX     XHI
+1220  F5E3   20 E0               BRA     SEARRG
+1221  F5E5               
+1222  F5E5   CE FA 06    NOREGF  LDX     #CHRERR         ; "? Invalid character"
+1223  F5E8   BD F3 F2            JSR     OUTSTR
+1224  F5EB   7E F5 22            JMP     SAMEAD          ; ADRESSE/REGISTER NOCHEINMAL AUSGEBEN
+1225  F5EE               
+1226  F5EE   BD F3 D8    FOUNDR  JSR     OUTCL           ; NEUE ZEILE ANFANGEN
+1227  F5F1   FE 3F BC            LDX     XHI             ; ADRESSE DES USER-REGISTERS
+1228  F5F4   FF 3F C0            STX     ZHI             ;    ALS AKTUELLE ADRESSE RETTEN
+1229  F5F7   8D 08               BSR     REGOUT
+1230  F5F9   5A                  DECB                    ; 16 BIT-REGISTER ?
+1231  F5FA   27 03               BEQ     CNG8BR          ; NEIN...
+1232  F5FC   BD F4 78            JSR     SETWOR
+1233  F5FF   0C          CNG8BR  CLC                     ; KEIN BEFEHLSBUCHSTABE EINGEGEBEN !
+1234  F600   39                  RTS
+1235  F601               
+1236  F601               
+1237  F601               
+1238  F601               ;----------------------------------------------------------------
+1239  F601               ; AUSGABE EINES USER-REGISTERS P/B/A/X/PC/SP
+1240  F601               ;----------------------------------------------------------------
+1241  F601               
+1242  F601   3C          REGOUT  PSHX                    ; ADRESSE DES USER-REGISTERS RETTEN
+1243  F602   FE 3F BE            LDX     YHI             ; STRINGADRESSE LADEN
+1244  F605   BD F3 F2            JSR     OUTSTR          ;         UND REGISTERNAME AUSGEBEN
+1245  F608   E6 00               LDAB    ,X              ; REGISTERGROESSE IN BYTE LADEN
+1246  F60A   08                  INX                     ;    UND STRINGADRESSE ERHOEHEN
+1247  F60B   FF 3F BE            STX     YHI             ; STRINGADRESSE RETTEN
+1248  F60E   38                  PULX                    ; ADRESSE DES USER-REGISTERS LADEN
+1249  F60F   5D                  TSTB                    ; AUSGABE DES SP ?
+1250  F610   26 05               BNE     STKREG          ; NEIN...
+1251  F612   CE 3F BA            LDX     #SPH            ; JA:   LADE USER SP
+1252  F615   C6 02               LDAB    #2              ;    UND SETZE DEN OFFSET AUF 2
+1253  F617   37          STKREG  PSHB                    ; BYTE-ZAEHLER RETTEN
+1254  F618   3C                  PSHX                    ; REGISTERADRESSE RETTEN        
+1255  F619   BD F4 09    REGBYT  JSR     OUT2H           ; BYTE AUSGEBEN
+1256  F61C   5A                  DECB                    ; FERTIG ?
+1257  F61D   26 FA               BNE     REGBYT          ; NEIN
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:42    Page: 29
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1258  F61F   BD F3 CE            JSR     OUTS            ; SPACE AUSGEBEN
+1259  F622   38                  PULX                    ; RESITERADRESSE ZURUECKLADEN
+1260  F623   33                  PULB                    ; BYTECOUNT LADEN
+1261  F624   39                  RTS
+1262  F625               
+1263  F625               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:44    Page: 30
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1264  F625                       .PAGE
+1265  F625               ;****************************************************************
+1266  F625               ;       SYSTEMMELDUNGEN UND KONSTANTEN
+1267  F625               ;****************************************************************
+1268  F625               
+1269  F625               
+1270  F625   0D0A0A      SELFT   .BYTE   CR,LF,LF
+1271  F628   53797374            .ASCIZ  "System selftest running..."
+      F62C   656D2073    
+      F630   656C6674    
+      F634   65737420    
+      F638   72756E6E    
+      F63C   696E672E    
+      F640   2E2E00      
+1272  F643               
+1273  F643   0D0A        RAMMS1  .BYTE   CR,LF
+1274  F645   52414D2D            .ASCIZ  "RAM-area found from $"
+      F649   61726561    
+      F64D   20666F75    
+      F651   6E642066    
+      F655   726F6D20    
+      F659   2400        
+1275  F65B               
+1276  F65B   20746F20    TOMSG   .ASCIZ  " to $"
+      F65F   2400        
+1277  F661               
+1278  F661   0D0A0A      HLPTXT  .BYTE   CR,LF,LF
+1279  F664   4D696E69            .ASCII  "Miniproz monitor V 1.1 command summary.  "
+      F668   70726F7A    
+      F66C   206D6F6E    
+      F670   69746F72    
+      F674   20562031    
+      F678   2E312063    
+      F67C   6F6D6D61    
+      F680   6E642073    
+      F684   756D6D61    
+      F688   72792E20    
+      F68C   20          
+1280  F68D   4D656D6F            .ASCII  "Memory subcommands:"
+      F691   72792073    
+      F695   7562636F    
+      F699   6D6D616E    
+      F69D   64733A      
+1281  F6A0   0D0A0A              .BYTE   CR,LF,LF
+1282  F6A3   20202020            .ASCII  "    C   Continue user-program          "
+      F6A7   43202020    
+      F6AB   436F6E74    
+      F6AF   696E7565    
+      F6B3   20757365    
+      F6B7   722D7072    
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:48    Page: 31
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+      F6BB   6F677261    
+      F6BF   6D202020    
+      F6C3   20202020    
+      F6C7   202020      
+1283  F6CA   20202020            .ASCII  "    M   Open new location"
+      F6CE   4D202020    
+      F6D2   4F70656E    
+      F6D6   206E6577    
+      F6DA   206C6F63    
+      F6DE   6174696F    
+      F6E2   6E          
+1284  F6E3   0D0A                .BYTE   CR,LF
+1285  F6E5   20202020            .ASCII  "    D   Display memory area            "
+      F6E9   44202020    
+      F6ED   44697370    
+      F6F1   6C617920    
+      F6F5   6D656D6F    
+      F6F9   72792061    
+      F6FD   72656120    
+      F701   20202020    
+      F705   20202020    
+      F709   202020      
+1286  F70C   20202020            .ASCII  "    R%  Open cpu-register %"
+      F710   52252020    
+      F714   4F70656E    
+      F718   20637075    
+      F71C   2D726567    
+      F720   69737465    
+      F724   722025      
+1287  F727   0D0A                .BYTE   CR,LF
+1288  F729   20202020            .ASCII  "    G   Go to user program             "
+      F72D   47202020    
+      F731   476F2074    
+      F735   6F207573    
+      F739   65722070    
+      F73D   726F6772    
+      F741   616D2020    
+      F745   20202020    
+      F749   20202020    
+      F74D   202020      
+1289  F750   20202020            .ASCII  "    T   Text input"
+      F754   54202020    
+      F758   54657874    
+      F75C   20696E70    
+      F760   7574        
+1290  F762   0D0A                .BYTE   CR,LF
+1291  F764   20202020            .ASCII  "    H   Help (displays this text)      "
+      F768   48202020    
+      F76C   48656C70    
+      F770   20286469    
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:48    Page: 32
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+      F774   73706C61    
+      F778   79732074    
+      F77C   68697320    
+      F780   74657874    
+      F784   29202020    
+      F788   202020      
+1292  F78B   20202020            .ASCII  "    =   Open same address"
+      F78F   3D202020    
+      F793   4F70656E    
+      F797   2073616D    
+      F79B   65206164    
+      F79F   64726573    
+      F7A3   73          
+1293  F7A4   0D0A                .BYTE   CR,LF
+1294  F7A6   20202020            .ASCII  "    L   Load MOTOROLA records          "
+      F7AA   4C202020    
+      F7AE   4C6F6164    
+      F7B2   204D4F54    
+      F7B6   4F524F4C    
+      F7BA   41207265    
+      F7BE   636F7264    
+      F7C2   73202020    
+      F7C6   20202020    
+      F7CA   202020      
+1295  F7CD   20202020            .ASCII  "    +   Open address + 1"
+      F7D1   2B202020    
+      F7D5   4F70656E    
+      F7D9   20616464    
+      F7DD   72657373    
+      F7E1   202B2031    
+1296  F7E5   0D0A                .BYTE   CR,LF
+1297  F7E7   20202020            .ASCII  "    M   Memory display/change          "
+      F7EB   4D202020    
+      F7EF   4D656D6F    
+      F7F3   72792064    
+      F7F7   6973706C    
+      F7FB   61792F63    
+      F7FF   68616E67    
+      F803   65202020    
+      F807   20202020    
+      F80B   202020      
+1298  F80E   20202020            .ASCII  "    -   Open address - 1"
+      F812   2D202020    
+      F816   4F70656E    
+      F81A   20616464    
+      F81E   72657373    
+      F822   202D2031    
+1299  F826   0D0A                .BYTE   CR,LF
+1300  F828   20202020            .ASCII  "    R   Register display               "
+      F82C   52202020    
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:54    Page: 33
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+      F830   52656769    
+      F834   73746572    
+      F838   20646973    
+      F83C   706C6179    
+      F840   20202020    
+      F844   20202020    
+      F848   20202020    
+      F84C   202020      
+1301  F84F   20202020            .ASCII  "    '   Open relativ (save old addr.)"
+      F853   27202020    
+      F857   4F70656E    
+      F85B   2072656C    
+      F85F   61746976    
+      F863   20287361    
+      F867   7665206F    
+      F86B   6C642061    
+      F86F   6464722E    
+      F873   29          
+1302  F874   0D0A                .BYTE   CR,LF
+1303  F876   4354524C            .ASCII  "CTRL/C  Abort command/user-program     "
+      F87A   2F432020    
+      F87E   41626F72    
+      F882   7420636F    
+      F886   6D6D616E    
+      F88A   642F7573    
+      F88E   65722D70    
+      F892   726F6772    
+      F896   616D2020    
+      F89A   202020      
+1304  F89D   20202020            .ASCII  "    @   Open indirect (save old addr.)"
+      F8A1   40202020    
+      F8A5   4F70656E    
+      F8A9   20696E64    
+      F8AD   69726563    
+      F8B1   74202873    
+      F8B5   61766520    
+      F8B9   6F6C6420    
+      F8BD   61646472    
+      F8C1   2E29        
+1305  F8C3   0D0A                .BYTE   CR,LF
+1306  F8C5   4354524C            .ASCII  "CTRL/T  Show current user-cpu-regs.    "
+      F8C9   2F542020    
+      F8CD   53686F77    
+      F8D1   20637572    
+      F8D5   72656E74    
+      F8D9   20757365    
+      F8DD   722D6370    
+      F8E1   752D7265    
+      F8E5   67732E20    
+      F8E9   202020      
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:54    Page: 34
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1307  F8EC   20202020            .ASCII  "    <   Open old address"
+      F8F0   3C202020    
+      F8F4   4F70656E    
+      F8F8   206F6C64    
+      F8FC   20616464    
+      F900   72657373    
+1308  F904   0D0A00              .BYTE   CR,LF,0
+1309  F907               
+1310  F907   0D0A        PROMPT  .BYTE   CR,LF
+1311  F909   4D696E69            .ASCIZ  "Miniproz> "
+      F90D   70726F7A    
+      F911   3E2000      
+1312  F914               
+1313  F914   6F6E7469    TXTCON  .ASCIZ  "ontinue user-program at PC=$"
+      F918   6E756520    
+      F91C   75736572    
+      F920   2D70726F    
+      F924   6772616D    
+      F928   20617420    
+      F92C   50433D24    
+      F930   00          
+1314  F931               
+1315  F931   756D7020    TXTDUM  .ASCIZ  "ump memory from $"
+      F935   6D656D6F    
+      F939   72792066    
+      F93D   726F6D20    
+      F941   2400        
+1316  F943               
+1317  F943   6F746F20    TXTGOT  .ASCIZ  "oto user program at $"
+      F947   75736572    
+      F94B   2070726F    
+      F94F   6772616D    
+      F953   20617420    
+      F957   2400        
+1318  F959               
+1319  F959   6F616420    TXTLOA  .ASCIZ  "oad MOTOROLA records"
+      F95D   4D4F544F    
+      F961   524F4C41    
+      F965   20726563    
+      F969   6F726473    
+      F96D   00          
+1320  F96E               
+1321  F96E   656D6F72    TXTMEM  .ASCIZ  "emory display at $"
+      F972   79206469    
+      F976   73706C61    
+      F97A   79206174    
+      F97E   202400      
+1322  F981               
+1323  F981   65676973    TXTREG  .ASCIZ  "egister dump: "
+      F985   74657220    
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:58    Page: 35
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+      F989   64756D70    
+      F98D   3A2000      
+1324  F990               
+1325  F990   65787420    TXTMSG  .ASCII  "ext input. (Exit with CTRL/C)"
+      F994   696E7075    
+      F998   742E2028    
+      F99C   45786974    
+      F9A0   20776974    
+      F9A4   68204354    
+      F9A8   524C2F43    
+      F9AC   29          
+1326  F9AD   80                  .BYTE   $80
+1327  F9AE               
+1328  F9AE   65676973    REGNAM  .ASCIZ  "egister name? "
+      F9B2   74657220    
+      F9B6   6E616D65    
+      F9BA   3F2000      
+1329  F9BD               
+1330  F9BD   08200800    DELTXT  .BYTE   BS,SPACE,BS,0
+1331  F9C1               
+1332  F9C1   0D0A        ERRMSG  .BYTE   CR,LF
+1333  F9C3   07          CHGERR  .BYTE   7
+1334  F9C4   3F204D65            .ASCIZ  "? Memory did not change"
+      F9C8   6D6F7279    
+      F9CC   20646964    
+      F9D0   206E6F74    
+      F9D4   20636861    
+      F9D8   6E676500    
+1335  F9DC               
+1336  F9DC   20617420    AT      .ASCIZ  " at $"
+      F9E0   2400        
+1337  F9E2               
+1338  F9E2   07          OFSERR  .BYTE   $7
+1339  F9E3   3F204F66            .ASCIZ  /? Offset error/
+      F9E7   66736574    
+      F9EB   20657272    
+      F9EF   6F7200      
+1340  F9F2               
+1341  F9F2   0D0A07      CKSERR  .BYTE   CR,LF,7
+1342  F9F5   3F204368            .ASCIZ  /? Checksum error/
+      F9F9   65636B73    
+      F9FD   756D2065    
+      FA01   72726F72    
+      FA05   00          
+1343  FA06               
+1344  FA06   07          CHRERR  .BYTE   7
+1345  FA07   3F20496E            .ASCIZ  /? Invalid character/
+      FA0B   76616C69    
+      FA0F   64206368    
+      FA13   61726163    
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:05:58    Page: 36
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+      FA17   74657200    
+1346  FA1B               
+1347  FA1B   0D0A        BRKMSG  .BYTE   CR,LF
+1348  FA1D   42726561            .ASCIZ  /Breakpoint encountered at PC=$/
+      FA21   6B706F69    
+      FA25   6E742065    
+      FA29   6E636F75    
+      FA2D   6E746572    
+      FA31   65642061    
+      FA35   74205043    
+      FA39   3D2400      
+1349  FA3C               
+1350  FA3C   0D0A        CTRLCM  .BYTE   CR,LF
+1351  FA3E   55736572            .ASCIZ  "User program aborted by CTRL/C at PC=$"
+      FA42   2070726F    
+      FA46   6772616D    
+      FA4A   2061626F    
+      FA4E   72746564    
+      FA52   20627920    
+      FA56   4354524C    
+      FA5A   2F432061    
+      FA5E   74205043    
+      FA62   3D2400      
+1352  FA65               
+1353  FA65   0D0A07      OPCODM  .BYTE   CR,LF,7
+1354  FA68   496C6C65            .ASCIZ  "Illegal opcode at PC=$"
+      FA6C   67616C20    
+      FA70   6F70636F    
+      FA74   64652061    
+      FA78   74205043    
+      FA7C   3D2400      
+1355  FA7F               
+1356  FA7F               ; KOMMANDOTABELLE MIT VEKTOREN
+1357  FA7F               
+1358  FA7F   43          COMTAB  .BYTE   'C
+1359  FA80   44                  .BYTE   'D
+1360  FA81   47                  .BYTE   'G
+1361  FA82   48                  .BYTE   'H
+1362  FA83   4C                  .BYTE   'L
+1363  FA84   4D                  .BYTE   'M      
+1364  FA85   52                  .BYTE   'R
+1365  FA86               
+1366  FA86   F140        COMVEK  .WORD   CONTIN
+1367  FA88   F155                .WORD   DUMP
+1368  FA8A   F1F4                .WORD   GOTO
+1369  FA8C   F0A5                .WORD   HELP
+1370  FA8E   F24A                .WORD   LOAD
+1371  FA90   F2AC                .WORD   MEMORY
+1372  FA92   F334                .WORD   CPUREG
+1373  FA94               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:06:00    Page: 37
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1374  FA94               ; SUBCOMMANDS FUER MEMORY COMMAND
+1375  FA94               
+1376  FA94   0D          MEMTAB  .BYTE   CR      ; MEMORY-COMMAND BEENDEN
+1377  FA95   4D                  .BYTE   'M      ; NEUE ADRESSE OEFFNEN
+1378  FA96   52                  .BYTE   'R      ; REGISTER OEFFNEN
+1379  FA97   54                  .BYTE   'T      ; TEXT EINGABE
+1380  FA98   2B                  .BYTE   '+      ; ADR+1 OEFFNEN
+1381  FA99   2D                  .BYTE   '-      ; ADR-1 OEFNNEN
+1382  FA9A   3D                  .BYTE   '=      ; GLEICHE ADRESSE OEFFNEN
+1383  FA9B   27                  .BYTE   ''      ; RELATIVES OEFFNEN
+1384  FA9C   40                  .BYTE   '@      ; ADRESSE INDIREKT OEFFNEN
+1385  FA9D   3C                  .BYTE   '<      ; ZURUECK ZU LETZTER ADRESSE NACH @ ODER '
+1386  FA9E               
+1387  FA9E   F331        MEMVEK  .WORD   MEMEND
+1388  FAA0   F4D1                .WORD   NEWADR
+1389  FAA2   F598                .WORD   CNGREG
+1390  FAA4   F483                .WORD   TXTINP
+1391  FAA6   F50C                .WORD   NEXTAD
+1392  FAA8   F51B                .WORD   LASTAD
+1393  FAAA   F522                .WORD   SAMEAD
+1394  FAAC   F4F7                .WORD   RELBYT
+1395  FAAE   F4E2                .WORD   INDIAD
+1396  FAB0   F4EF                .WORD   OFFSET
+1397  FAB2               
+1398  FAB2               ; TABELLE FUER REGISTER ANZEIGE
+1399  FAB2               
+1400  FAB2   48494E5A    FLAGS   .ASCIZ  /HINZVC/
+      FAB6   564300      
+1401  FAB9               
+1402  FAB9   46BD01      FREG    .BYTE   'F,     EQUAL,1
+1403  FABC   42BD01      BREG    .BYTE   'B,     EQUAL,1
+1404  FABF   41BD01      AREG    .BYTE   'A,     EQUAL,1
+1405  FAC2   58BD02      XREG    .BYTE   'X,     EQUAL,2
+1406  FAC5   5350BD00    SPREG   .BYTE   'S,'P,  EQUAL,0
+1407  FAC9   5043BD02    PCREG   .BYTE   'P,'C,  EQUAL,2,$FF     ; $FF IST DAS LISTENENDE
+      FACD   FF          
+1408  FACE               
+1409  FACE               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:06:02    Page: 38
+
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+1410  FACE                       .PAGE
+1411  FACE               ;*************************************************************************
+1412  FACE               ;       VEKTOREN
+1413  FACE               ;*************************************************************************
+1414  FACE               
+1415  FFEE                       .ORG    $FFEE
+1416  FFEE               
+1417  FFEE   3FFD                .WORD   JTRAP           ; TRAP
+1418  FFF0   3FE8                .WORD   JSCI            ; SCI-IRQ2 (RDRF, ORFE, TDRE)
+1419  FFF2   3FEB                .WORD   JTOF            ; TOF-IRQ2
+1420  FFF4   3FEE                .WORD   JOCF            ; OCF-IRQ2
+1421  FFF6   3FF1                .WORD   JICF            ; ICF-IRQ2
+1422  FFF8   3FF4                .WORD   JIRQ1           ; IRQ1
+1423  FFFA   3FF7                .WORD   JSWI            ; SWI
+1424  FFFC   3FFA                .WORD   JNMI            ; NMI
+1425  FFFE   F000                .WORD   COLD            ; RESET
+1426  0000               
+1427  0000                       .END
+
+Assembly successful, no errors detected.
+Output-filename A:\ASM63\HEXFILES\MINIP1.HX2
+Elapsed time: 128.6 sec.
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   MINIP1.MIC     02.01.1991    19:06:06    Page: 39
+
+
+
+SYMBOL TABLE:
+
+
+A      $3FB4   ABORT  $F0E4   ABORT1 $F124   AREG   $FABF   ASCOUT $F1DD   
+AT     $F9DC   B      $3FB5   BELL   $0007   BREAK  $F21E   BREAK1 $F23D   
+BREG   $FABC   BRKMSG $FA1B   BS     $0008   BUILD  $F424   BUILDL $F416   
+BUILDR $F41A   BYTECT $3FC6   CHGERR $F9C3   CHRERR $FA06   CKSERR $F9F2   
+CKSUM  $3FC5   CMPOFS $F503   CNG1   $F5B3   CNG8BR $F5FF   CNGREG $F598   
+COLD   $F000   COMTAB $FA7F   COMVEK $FA86   CONREG $F369   CONTIN $F140   
+CONTRL $F0AB   CPUREG $F334   CR     $000D   CTRL   $0040   CTRLC  $0003   
+CTRLCM $FA3C   CTRLP  $0010   CTRLQ  $0011   CTRLS  $0013   CTRLT  $0014   
+CTRLTI $F106   CTRLX  $0018   CTRLZ  $001A   D1     $F166   DELETE $007F   
+DELTXT $F9BD   DERR   $F160   DMPEND $F1F3   DONREG $F386   DUMP   $F155   
+DUMP1  $F17A   DUMP11 $F189   DUMP12 $F197   DUMP2  $F19A   DUMP21 $F1AF   
+DUMP23 $F1BE   DUMP3  $F1C7   DUMP32 $F1D2   ECHO   $F3BE   ENDFLG $F35F   
+EQUAL  $00BD   ERRMSG $F9C1   ESC    $001B   EXIT1  $F105   EXIT2  $F116   
+F      $3FB3   FLAGS  $FAB2   FLGOUT $F35A   FOUND  $F0C8   FOUNDR $F5EE   
+FREG   $FAB9   G1     $F205   GOTO   $F1F4   HELP   $F0A5   HLPTXT $F661   
+ICRH   $000D   ICRL   $000E   IN1HG  $F43B   INCRP  $F5CC   INDIAD $F4E2   
+INERR  $F43D   INP2HA $F43F   INP4HX $F45A   INPHEX $F018   INPHX  $F425   
+INPS4X $F45E   JICF   $3FF1   JIRQ1  $3FF4   JMP    $007E   JNMI   $3FFA   
+JOCF   $3FEE   JSCI   $3FE8   JSWI   $3FF7   JTOF   $3FEB   JTRAP  $3FFD   
+LASTAD $F51B   LF     $000A   LOAD   $F24A   LOAD10 $F272   LOAD11 $F27C   
+LOAD12 $F29D   LOAD15 $F2A0   LOAD16 $F2A8   LOAD17 $F2AB   LOAD2  $F250   
+LOAD3  $F253   LOADER $F26D   MCERR  $F319   MEMEND $F331   MEMERR $F2F6   
+MEMORY $F2AC   MEMTAB $FA94   MEMVEK $FA9E   MFOUND $F324   NADDR  $F46C   
+NAMEF  $F558   NBYTE1 $F458   NBYTE2 $F459   NEWADR $F4D1   NEWC   $F4E1   
+NEXTAD $F50C   NOREGF $F5E5   NOTSP  $F380   OCRH   $000B   OCRL   $000C   
+OFFSET $F4EF   OFSERR $F9E2   OPCERR $F0D3   OPCODM $FA65   OPENAD $F582   
+OPENR  $F565   OPENRG $F571   OUT2H  $F409   OUT2HA $F40C   OUT4H  $F407   
+OUTCL  $F3D8   OUTDM  $F3D2   OUTDS  $F3CC   OUTEND $F400   OUTHEX $F01B   
+OUTM   $F3D4   OUTS   $F3CE   OUTSTR $F3F2   OUTX   $F401   OUTXHI $F404   
+P1DDR  $0000   P1DR   $0002   P2DDR  $0001   P2DR   $0003   P4DDR  $0005   
+P4DR   $0007   PCH    $3FB8   PCL    $3FB9   PCOUT  $F133   PCREG  $FAC9   
+PRCRLF $F012   PRINT  $F00F   PROMPT $F907   PRSPAC $F015   R8BIT  $F580   
+RAMERR $F07D   RAMLOP $F06A   RAMMS1 $F643   RAMSTA $2000   RCR    $0014   
+RDR    $0012   READ   $F387   REGBYT $F619   REGLOP $F350   REGNAM $F9AE   
+REGOUT $F601   RELBYT $F4F7   RMCR   $0010   RXDATA $3FC4   SAME   $F305   
+SAMEA  $F2C3   SAMEAD $F522   SAVECH $F0FE   SCALL  $F32B   SCRATW $3FC2   
+SEACOM $F0BC   SEARRG $F5C5   SEASC  $F30F   SELFT  $F625   SETBYT $F46D   
+SETWOR $F478   SPACE  $0020   SPH    $3FBA   SPL    $3FBB   SPREG  $FAC5   
+STACK  $3FE7   START  $F01E   STKREG $F617   STO    $F2FE   STOB   $F2ED   
+SUBC   $F30A   SUBCMD $F2CB   SWI    $003F   SYSFLG $3FC7   TCSR   $0008   
+TDR    $0013   TERINP $F006   TERIO  $F00C   TEROUT $F009   TIMERH $0009   
+TIMERL $000A   TOMSG  $F65B   TRCSR  $0011   TRENNO $F3EC   TRENNZ $F3E0   
+TRYCPU $F53B   TXTCHK $F49D   TXTCON $F914   TXTDUM $F931   TXTGOT $F943   
+TXTIN  $F493   TXTINP $F483   TXTLOA $F959   TXTMEM $F96E   TXTMSG $F990   
+TXTOK  $F4CB   TXTOUT $F4B0   TXTREG $F981   USRREG $F33A   WARM   $F003   
+WR1    $F39A   WR2    $F3B6   WR3    $F3AB   WRITE  $F399   XH     $3FB6   
+XHI    $3FBC   XL     $3FB7   XLO    $3FBD   XOFF   $0011   XON    $0013   
+XREG   $FAC2   YHI    $3FBE   YLO    $3FBF   ZHI    $3FC0   ZLO    $3FC1   
+
+
+Total of 240 global entries
+Total of 0 local entry
+Total of 0 macro-definition

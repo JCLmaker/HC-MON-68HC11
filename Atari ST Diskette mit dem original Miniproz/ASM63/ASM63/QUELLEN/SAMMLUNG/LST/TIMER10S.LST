@@ -1,0 +1,53 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   TIMER10S.MIC   03.01.1991    12:35:52    Page: 1
+ProgrammgerÅst fÅr 10-Sekunden-Timer in Polling-Technik
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  ProgrammgerÅst fÅr 10-Sekunden-Timer in Polling-Technik
+   4  2000                       .incl   miniproz
+   5  2000                       .incl   konstant
+   6  2000               
+   7  2000               tics    .equ    61440           ; 50ms Intervall bei f=1.2288 MHz
+   8  2000               help    .equ    $FF             ; Zero-Page-Hilfsspeicher
+   9  2000               
+  10  2000   86 C8       start   ldaa    #200            ; 200 x 50ms =  Sekunden
+  11  2002   97 FF               staa    help
+  12  2004   96 08       loop    ldaa    tcsr            ; OCF-Bit lîschen
+  13  2006   DC 0B               ldd     ocrh            ; letzten Vergleichswert laden
+  14  2008   C3 F0 00            addd    #tics           ; und Intervall addieren
+  15  200B   DD 0B               std     ocrh            ; Timer programmieren
+  16  200D               
+  17  200D               ; Intervall zÑhlen:
+  18  200D               
+  19  200D   7A 00 FF            dec     help            ; 50ms-Intervall zÑhlen, 10 Sekunden um?
+  20  2010   26 09               bne     1$              ; nein...
+  21  2012   86 C8               ldaa    #200            ; ja, ZÑhler auf Anfang stellen
+  22  2014   97 FF               staa    help
+  23  2016   86 07               ldaa    #bell
+  24  2018   BD F0 09            jsr     terout          ; nach 10 Sekunden 1x klingeln lassen
+  25  201B               
+  26  201B               ; warten auf Ablauf des Timers:
+  27  201B               
+  28  201B   7B 40 08    1$      tim     #%01000000,tcsr ; OCF-Bit gesetzt?  (Timer abgelaufen?)
+  29  201E   26 E4               bne     loop            ; ja...
+  30  2020   20 F9               bra     1$              ; nein, dann warten...
+  31  2022               
+  32  2022                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\TIMER10S.HX2
+Elapsed time: 3.7 sec.

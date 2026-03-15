@@ -1,0 +1,43 @@
+        .list
+        .file
+        .title  5.1. FIFO-Routinen ohne öberlauftest
+
+anzahl  .equ    12              ; Buffer fÅr 12 Bytes
+buffer  .equ    $3000           ; Speicherbereich fÅr Buffer
+wpoi    .equ    buffer+anzahl   ; Schreibzeiger in den Buffer
+rpoi    .equ    wpoi+2          ; Lesezeiger in den Buffer
+
+; Initialisierung (Lîschen) des Buffers
+
+init    ldx     #buffer
+        stx     wpoi            ; Schreibzeiger steht auf Anfang
+        stx     rpoi            ; Lesezeiger steht auf Anfang
+        rts
+
+; Ein Element im Buffer speichern
+
+write   sei                     ; *** Routine nicht unterbrechbar!
+        ldx     wpoi            ; *   Schreibzeiger holen
+        staa    ,x              ; *   Element im Buffer speichern
+        inx                     ; *   Zeiger auf nÑchsten Eintrag
+        cpx     #buffer+anzahl  ; *   Bufferende Åberschritten?
+        bne     1$              ; *   nein...
+        ldx     #buffer         ; *   ja: Anfang des Buffers laden
+1$      stx     wpoi            ; *   neuen Pointer abspeichern
+        cli                     ; *** Unterbrechung wieder mîglich
+        rts
+
+; Ein Element aus dem Buffer lesen
+
+read    sei                     ; *** Routine nicht unterbrechbar!!!
+        ldx     rpoi            ; *   Lesezeiger holen
+        ldaa    ,x              ; *   Element aus dem Buffer lesen
+        inx                     ; *   Zeiger auf nÑchsten Eintrag
+        cpx     #buffer+anzahl  ; *   Bufferende Åberschritten?
+        bne     1$              ; *   nein...
+        ldx     #buffer         ; *   ja: Anfang des Buffers laden
+1$      stx     rpoi            ; *   neuen Pointer abspeichern
+        cli                     ; *** Unterbrechung wieder mîglich
+        rts
+
+        .end

@@ -1,0 +1,42 @@
+        .list
+        .file
+        .title  2.6. Logarithmus/antilogarithmus zur Basis 2
+
+start   ldab    #77
+        bsr     log2            ; LD(77) berechnen
+        xgdx
+        pshx                    ; Ergebnis im Stack retten
+        ldab    #3
+        bsr     log2            ; LD(3) berechnen
+        tsx
+        addd    ,x              ; LD(3) + LD(77)
+        pulx                    ; Stack sÑubern
+        bsr     alog2           ; Anti-Logarithmus bilden
+        swi                     ; Programmende
+
+;*************************************
+;  LOG2 zerstîrt F,A,B / A,B = LD(B)
+;*************************************
+
+log2    ldaa    #8              ; maximale Vorzahl fÅr 8 Bit
+1$      deca                    ; Vorzahl vermindern
+        aslb                    ; Mantisse schieben
+        bcc     1$
+        rts
+
+;*************************************
+;  ALOG2 zerstîrt F,A,B / D = 2^(A,B)
+;*************************************
+
+alog2   suba    #8              ; grîûte Vorzahl kann 7 sein!
+        sec
+        rorb                    ; hîchstes Bit immer setzen
+1$      inca                    ; Vorzahl = 0 ?
+        beq     2$
+        lsrb                    ; Mantisse schieben
+        bra     1$
+
+2$      rts
+
+        .end
+        

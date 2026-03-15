@@ -1,0 +1,100 @@
+        .list
+        .file
+        .title  5.4. DEZ/HEX-Umwandlung mit öberlauftest
+        .incl   miniproz
+        .incl   konstant
+
+        .macro  print
+        ldx     ?1
+        jsr     print
+        .endmac
+
+buffer  .equ    $F0             ; Zero-Page-Eingabebuffer
+zahl    .equ    $F8             ; hier steht die umgewandelte Zahl
+
+start   print   #dez            ; Zur Eingabe einer Dezimalzahl auffordern
+        ldx     #buffer         ; 3-Byte Buffer
+        bsr     dezinp          ; 3-stellige Zahl einlesen und umwandeln
+        bcc     1$              ; wenn Eingabe ok...
+        print   #error          ; Bei Eingaben > 255 Fehler melden
+        swi                     ; und Programm abbrechen
+
+1$      psha                    ; Ergebnis retten
+        print   #hex            ; Ergebnis der Umwandlung ist eine HEX-Zahl
+        pula
+        jsr     outhex          ; HEX-Zahl ausgeben
+        bra     start
+
+;***********************************************************************
+; DEZINP liest 3 Bytes mit Hilfe der Routine READ in einen Buffer und
+; wandelt die Eingabe in eine HEX-Zahl um. Es erfolgt ein öberlauftest!
+;
+;  Parameter:  X = Adresse eines 3-Byte Buffers
+;   RÅckgabe:  A = Hex-Wert der eingelesenen Dezimalzahl, C=1: Zahl>255
+;  VerÑndert:  F,A,B,X
+;  UP-Aufruf:  READ
+
+dezinp  ldab    #3              ; lese maximal 3 Byte in den Buffer
+        bsr     read            ; Buffer enthÑlt bereits BinÑrzahlen
+        clr     zahl            ; Zwischenspeicher initialisieren
+1$      cmpb    #3              ; alles bearbeitet?
+        beq     ende            ; ja, dann Ergebnis laden
+        pshb                    ; ZÑhler retten
+        ldaa    zahl            ; letztes Zwischenergebnis laden
+        ldab    #10             ; und eine Dezimalstelle (->10)
+        mul                     ; nach links schieben
+        addb    ,x              ; Ziffer addieren
+        stab    zahl            ; und Zwischenergebnis speichern
+        pulb                    ; ZÑhler zurÅckholen
+        incb                    ; und Bearbeitung einer Stelle zÑhlen
+        inx                     ; Bufferzeiger auf nÑchste Eingabe
+        tsta                    ; öberlauf aufgetreten?
+        beq     1$              ; nein...
+        sec                     ; Zahl war grîûer als 255!
+        rts
+
+ende    ldaa    zahl            ; umgewandelte Zahl steht in A
+        clc                     ; Eingabe war ok
+        rts
+
+;***********************************************************************
+;  READ akzeptiert nur Ziffern (0-9) und CR. Die Eingaben werden in
+;  einzelne BinÑrziffern umgewandelt und in einem Buffer gespeichert.
+;
+;  Parameter:  X = Bufferadresse, B = Anzahl einzulesender Zeichen
+;   RÅckgabe:  B = Anzahl der noch freien Bufferelemente
+;  VerÑndert:  F,A,B
+;  UP-Aufruf:  TERINP, TEROUT, PRCRLF
+
+read    pshx                    ; Bufferadresse retten
+1$      jsr     terinp          ; ASCII-Zeichen vom Terminal lesen
+        cmpa    #cr             ; Eingabeende?
+        beq     2$              ; ja
+        tstb                    ; noch Eingabe nîtig?
+        beq     1$              ; nein, warte auf CR...
+        cmpa    #'0             ; kleiner als ASCII '0' ?
+        blo     1$              ; ja, Eingabe ignorieren
+        cmpa    #'9             ; grîûer als ASCII '9' ?
+        bhi     1$              ; ja, Eingabe ignorieren
+        jsr     terout          ; Echo erzeugen
+        suba    #'0             ; Umwandlung ASCII -> BinÑr
+        staa    ,x              ; Zeichen im Buffer speichern
+        inx                     ; Zeiger erhîhen
+        decb
+        bra     1$              ; auf Eingabeende oder Zahl warten...
+
+2$      pulx                    ; Anfangsadresse des Buffers laden
+        jmp     prcrlf          ; neue Zeile anfangen
+
+;********************************************
+;  Texte fÅr das Programmbeispiel
+;********************************************
+
+dez     .db     cr,lf,lf
+        .asciz  /Dezimalzahl? /
+hex     .asciz  /Hexzahl = $/
+error   .db     7
+        .asciz  /*** Eingabe war groesser als 255 ***/
+
+        .end
+

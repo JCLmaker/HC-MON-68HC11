@@ -1,0 +1,120 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   IIR.MIC        03.01.1991    12:35:04    Page: 1
+3.2.3. IIR-Tiepaû-Filter (Tschebbyscheff) fg=25Hz
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  3.2.3. IIR-Tiepaû-Filter (Tschebbyscheff) fg=25Hz
+   4  2000                       .incl   miniproz
+   5  2000                       .incl   konstant
+   6  2000               
+   7  2000               buffer  .equ    $40             ; Zero-Page Arbeitsspeicher (2 Byte)
+   8  2000               input   .equ    buffer+2        ; Eingabesumme (16-Bit)
+   9  2000               output  .equ    input+2         ; Ausgabesumme (16-Bit)
+  10  2000               help    .equ    output+2        ; Hilfsregister fÅr Zwischenergebnisse
+  11  2000               tics    .equ    1229            ; 1ms Intervall bei f=1.2288 MHz
+  12  2000               
+  13  2000               ; Initialisierung des Timers
+  14  2000               
+  15  2000   86 7E       init    ldaa    #jmp            ; Opcode fÅr JMP-Befehl laden
+  16  2002   B7 3F EE            staa    jocf            ; und an Interrupt-Sprungleiste speichern
+  17  2005   CE 20 17            ldx     #timer          ; Adresse der eigenen Interrupt-Routine
+  18  2008   FF 3F EF            stx     jocf+1          ; in Interrupt-Sprungleiste speichern
+  19  200B   DC 09               ldd     timerh          ; aktuellen ZÑhlerstand laden
+  20  200D   C3 04 CD            addd    #tics           ; und Intervall addieren
+  21  2010   DD 0B               std     ocrh            ; Timer programmieren
+  22  2012   72 08 08            oim     #%00001000,tcsr ; Timer-Interrupt freigeben
+  23  2015   0E                  cli                     ; CPU reagiert auf Interrupts
+  24  2016   3F                  swi                     ; Sprung in den MINIPROZ
+  25  2017               
+  26  2017               ;********************************************
+  27  2017               ;  Interrupt-Routine  (138 Taktzyklen)
+  28  2017               ;********************************************
+  29  2017               
+  30  2017   96 08       timer   ldaa    tcsr            ; OCF-Bit lîschen
+  31  2019   DC 0B               ldd     ocrh            ; Programmieren des
+  32  201B   C3 04 CD            addd    #tics           ; nÑchsten Timer-
+  33  201E   DD 0B               std     ocrh            ; intervalls
+  34  2020   B7 40 00            staa    ad              ; A/D-Wandler anstoûen
+  35  2023   96 40               ldaa    buffer
+  36  2025   97 41               staa    buffer+1
+  37  2027   96 42               ldaa    input           ; Eingabesumme durch 256 teilen
+  38  2029   97 40               staa    buffer
+  39  202B   F6 40 00            ldab    ad              ; neuen A/D-Wert laden
+  40  202E   86 60               ldaa    #b0             ; mit b0
+  41  2030   3D                  mul                     ; multiplizieren und
+  42  2031   05                  asld                    ; teilen durch 128 -> schieben um 1 Position
+  43  2032   16                  tab                     ; nach links ergibt Wert um 256 zu groû!
+  44  2033   4F                  clra                    ; Akku-D = A/D * b0 / 128
+  45  2034   DD 42               std     input
+  46  2036   D6 40               ldab    buffer
+  47  2038   86 61               ldaa    #a1
+  48  203A   3D                  mul
+  49  203B   05                  asld                    ; Teilprodukt ist um 256 zu groû
+  50  203C   D3 42               addd    input           ; zur Eingabe addieren
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   IIR.MIC        03.01.1991    12:35:06    Page: 2
+3.2.3. IIR-Tiepaû-Filter (Tschebbyscheff) fg=25Hz
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+  51  203E   DD 42               std     input
+  52  2040   96 41               ldaa    buffer+1
+  53  2042   C6 62               ldab    #a2
+  54  2044   3D                  mul
+  55  2045   DD 46               std     help            ; Teilprodukt
+  56  2047   DC 42               ldd     input           ; von der
+  57  2049   93 46               subd    help            ; Eingabesumme
+  58  204B   DD 42               std     input           ; abziehen
+  59  204D   DD 44               std     output
+  60  204F   D6 40               ldab    buffer
+  61  2051   4F                  clra
+  62  2052   05                  asld                    ; *2
+  63  2053   D3 44               addd    output
+  64  2055   DD 44               std     output
+  65  2057   D6 41               ldab    buffer+1
+  66  2059   4F                  clra
+  67  205A   D3 44               addd    output
+  68  205C   B7 60 00            staa    da              ; berechneten Wert/256 ausgeben
+  69  205F   3B                  rti
+  70  2060               
+  71  2060               ;*********************************************************
+  72  2060               ;  Konstanten fÅr das Filter entnommen aus:
+  73  2060               ;  H. Gîtz; EinfÅhrung in die digitale Signalverarbeitung;
+  74  2060               ;  Teubner Studienskripten 117; 1990; Seite 201
+  75  2060               ;*********************************************************
+  76  2060               
+  77  2060   9F          b0      .db     159             ;  0.0048517 = 1/128 * 159/256
+  78  2061               ;b1                                2
+  79  2061   E8          a1      .db     232             ;  1.8143    = 232/128
+  80  2062   D5          a2      .db     213             ; -0.8344    = 213/256
+  81  2063               
+  82  2063                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\IIR.HX2
+Elapsed time: 5.9 sec.

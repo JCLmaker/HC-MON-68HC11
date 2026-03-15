@@ -1,0 +1,48 @@
+        .list
+        .file
+        .title  3.1.2. Sinus-Funktionsgenerator
+
+da      .equ    $6000           ; D/A-Wandler zur Ausgabe des Signals
+dpi     .equ    201             ; 201 = INT(32*(2*PI))
+pi      .equ    dpi/2           ; PI
+pi2     .equ    dpi/4           ; PI/2
+
+start   clrb
+1$      bsr     sinus           ; B=SIN(A) berechnen
+        adda    #$80            ; Null-Potential verschieben
+        stab    da              ; und Ausgangsspannung erzeugen
+        incb                    ; Winkel erhîhen
+        cmpb    #dpi            ; eine Periode fertig?
+        beq     start           ; ja, dann von 0 beginnen
+        bra     1$
+
+;***************************************
+;  SINUS zerstîrt F,A,B,X / A = SIN(B)
+;***************************************
+
+sinus   ldx     #sin
+        clra                    ; Flag fÅr Q1/Q2
+        cmpb    #pi             ; Argument > PI ?
+        blt     1$              ; nein...
+        subb    #pi             ; ja, dann PI abziehen und
+        coma                    ; Flag fÅr Q3/Q4 setzen
+1$      cmpb    #pi2            ; Restargument > PI/2 ?
+        bls     2$              ; nein...
+        negb                    ; - Argument
+        addb    #pi             ; + PI --> Winkel im Q1
+2$      abx                     ; Tabellenelement adressieren
+        eora    ,x              ; SIN-Wert laden, Vorzeichen berÅcksichtigen
+        rts
+
+; Tabelle mit 50 StÅtzwerten im Bereich 0-PI/2
+
+sin     .db   $0,$4,$8,$C,$10,$14,$18,$1C
+        .db   $20,$24,$28,$2C,$30,$33,$37,$3B
+        .db   $3E,$42,$45,$49,$4C,$4F,$52,$55
+        .db   $58,$5B,$5E,$61,$63,$66,$68,$6A
+        .db   $6D,$6F,$71,$72,$74,$76,$77,$79
+        .db   $7A,$7B,$7C,$7D,$7D,$7E,$7E,$7F
+        .db   $7F,$7F
+
+        .end
+

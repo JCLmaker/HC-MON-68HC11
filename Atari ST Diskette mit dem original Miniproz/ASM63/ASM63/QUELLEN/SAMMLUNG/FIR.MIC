@@ -1,0 +1,90 @@
+        .list
+        .file
+        .title  3.2.2. FIR-Tiefpaû-Filter (Butterworth) fg=25Hz
+        .incl   miniproz
+        .incl   konstant
+
+buffer  .equ    $40             ; Ringbuffer fÅr 23 Abtastwerte
+wrpoi   .equ    buffer+23       ; Schreibzeiger in den Buffer
+summe   .equ    wrpoi+2         ; Rechenregister (16-Bit)
+tabpoi  .equ    summe+2         ; Tabellenzeiger
+count   .equ    tabpoi+2        ; ZÑhler fÅr Schleifendurchlauf
+zeit    .equ    1229
+
+start   ldaa    #jmp            ; opcode von "JMP"
+        staa    jocf
+        ldx     #timer          ; Sprungadresse
+        stx     jocf+1
+        ldd     timerh          ; aktuellen counter laden (16-Bit)
+        addd    #zeit           ; 1229 tics = 1 Millisekunde
+        std     ocrh
+        oim     #%00001000,tcsr ; OCF-Interrupt im TCSR setzen
+        ldx     #buffer         ; 23 Byte Ringbuffer
+        stx     wrpoi
+        cli                     ; Interrupt freigeben
+        swi                     ; RÅcksprung in den Monitor
+
+;*****************************************************
+;  Timer-Interrupt  (1598/1595 Taktzyklen)
+;*****************************************************
+
+timer   ldaa    tcsr            ; TCSR lesen = Reset OCF-Bit
+        ldd     ocrh            ; Sollzeit laden (16-Bit)
+        addd    #zeit           ;    und 2 Millisekunden addieren
+        std     ocrh            ; neuen Timer programmieren
+        ldaa    summe           ; Ausgabewert=(Summe/256) laden
+        staa    da              ;    und ausgeben...
+        ldaa    ad              ; letzten Analogwert holen
+        staa    ad              ;    und Wandler erneut anstoûen
+        adda    #$80            ; Offset erzeugen fÅr D/A-Wandler
+
+; neuen A/D-Wert im Ringbuffer speichern
+
+        ldx     wrpoi           ; Position des neuen Elements
+        staa    0,x             ; neuen Wert im Buffer speichern
+        inx                     ; Bufferpointer erhîhen
+        cpx     #wrpoi          ; Bufferende erreicht ?
+        bne     1$              ; nein...
+        ldx     #buffer         ; ja: erstes Element laden
+1$      stx     wrpoi           ; neuen Schreibpointer retten
+
+; Berechnung des Ausgangswertes
+
+        clr     summe           ; 16 Bit Summe
+        clr     summe+1         ;    lîschen
+        ldx     #konst          ; Pointer auf Konstantentabelle
+        stx     tabpoi          ; Pointer speichern
+        ldx     wrpoi           ; aktueller Schreibpointer
+
+; Berechnung mit positiven Koeffizienten:
+
+        ldaa    #konst          ; 15 positive Werte
+        staa    count           ; SchleifenzÑhler setzen
+loop    ldab    0,x             ; einen Bufferwert laden
+        inx
+        cpx     #wrpoi          ; Bufferende erreicht ?
+        bne     1$              ; nein...
+        ldx     #buffer         ; ja: erstes Element laden
+1$      pshx                    ; Pointer retten
+        ldx     tabpoi          ; Tabellenpointer fÅr Koeffiziententabelle
+        ldaa    0,x             ; Koeffizient laden
+        inx
+        stx     tabpoi          ; neuen Tabellenzeiger speichern
+        pulx
+        mul                     ; Teilprodukt berechnen
+        addd    summe
+        std     summe           ; Summe abspeichern
+        dec     count           ; alle Werte bearbeitet ?
+        bne     loop
+        rti
+
+;*********************************************************
+;  Tabelle mit FIR-Konstanten in umgekehrter Reihenfolge
+;*********************************************************
+
+konst   .byte   $01,$01,$02,$02,$03
+        .byte   $04,$06,$08,$0b,$0e
+        .byte   $14,$1b,$25,$33,$45
+
+        .end
+

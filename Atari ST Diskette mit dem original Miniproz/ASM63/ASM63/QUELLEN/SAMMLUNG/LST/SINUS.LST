@@ -1,0 +1,68 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   SINUS.MIC      03.01.1991    12:34:16    Page: 1
+3.1.2. Sinus-Funktionsgenerator
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  3.1.2. Sinus-Funktionsgenerator
+   4  2000               
+   5  2000               da      .equ    $6000           ; D/A-Wandler zur Ausgabe des Signals
+   6  2000               dpi     .equ    201             ; 201 = INT(32*(2*PI))
+   7  2000               pi      .equ    dpi/2           ; PI
+   8  2000               pi2     .equ    dpi/4           ; PI/2
+   9  2000               
+  10  2000   5F          start   clrb
+  11  2001   8D 0C       1$      bsr     sinus           ; B=SIN(A) berechnen
+  12  2003   8B 80               adda    #$80            ; Null-Potential verschieben
+  13  2005   F7 60 00            stab    da              ; und Ausgangsspannung erzeugen
+  14  2008   5C                  incb                    ; Winkel erhîhen
+  15  2009   C1 C9               cmpb    #dpi            ; eine Periode fertig?
+  16  200B   27 F3               beq     start           ; ja, dann von 0 beginnen
+  17  200D   20 F2               bra     1$
+  18  200F               
+  19  200F               ;***************************************
+  20  200F               ;  SINUS zerstîrt F,A,B,X / A = SIN(B)
+  21  200F               ;***************************************
+  22  200F               
+  23  200F   CE 20 25    sinus   ldx     #sin
+  24  2012   4F                  clra                    ; Flag fÅr Q1/Q2
+  25  2013   C1 64               cmpb    #pi             ; Argument > PI ?
+  26  2015   2D 03               blt     1$              ; nein...
+  27  2017   C0 64               subb    #pi             ; ja, dann PI abziehen und
+  28  2019   43                  coma                    ; Flag fÅr Q3/Q4 setzen
+  29  201A   C1 32       1$      cmpb    #pi2            ; Restargument > PI/2 ?
+  30  201C   23 03               bls     2$              ; nein...
+  31  201E   50                  negb                    ; - Argument
+  32  201F   CB 64               addb    #pi             ; + PI --> Winkel im Q1
+  33  2021   3A          2$      abx                     ; Tabellenelement adressieren
+  34  2022   A8 00               eora    ,x              ; SIN-Wert laden, Vorzeichen berÅcksichtigen
+  35  2024   39                  rts
+  36  2025               
+  37  2025               ; Tabelle mit 50 StÅtzwerten im Bereich 0-PI/2
+  38  2025               
+  39  2025   0004080C    sin     .db   $0,$4,$8,$C,$10,$14,$18,$1C
+  40  202D   2024282C            .db   $20,$24,$28,$2C,$30,$33,$37,$3B
+  41  2035   3E424549            .db   $3E,$42,$45,$49,$4C,$4F,$52,$55
+  42  203D   585B5E61            .db   $58,$5B,$5E,$61,$63,$66,$68,$6A
+  43  2045   6D6F7172            .db   $6D,$6F,$71,$72,$74,$76,$77,$79
+  44  204D   7A7B7C7D            .db   $7A,$7B,$7C,$7D,$7D,$7E,$7E,$7F
+  45  2055   7F7F                .db   $7F,$7F
+  46  2057               
+  47  2057                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\SINUS.HX2
+Elapsed time: 2.1 sec.

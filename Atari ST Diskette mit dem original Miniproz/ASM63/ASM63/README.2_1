@@ -1,0 +1,576 @@
+
+README zum Cross-Assembler V2.1-A                                 Januar/1991
+---------------------------------
+
+     Die auf dieser Diskette enthaltenen Programme, Resourcen, Daten-
+     und Quellfiles drfen nur nicht-kommerziell verwendet werden!
+     Verkauf untersagt. Ver„nderungen an allen Files (bis auf MINIP1.MIC
+     und WORLD.MIC, sowie den *.INF-Files) untersagt. Kopieren und
+     Weitergabe mit diesem README-File und mit Quellenangabe gestattet!
+
+     Keine Haftung fr Sch„den, die aus der Anwendung der Programme
+     oder Daten entstehen!
+
+     (c) 1990, 1991 by Prof. Dr. Schiller, DBP-Telekom FH-Berlin.
+     Ringbahnstrae 130, D-1000 Berlin 42
+
+     Tel.: +4930 758.47.00,  FAX: +4930 752.20.70,  Telex: 183660 fhbln d,
+     Teletex 308053=FHBln,  DATEX-P: 45300090864::IMAGE
+
+     Fehlerreport bitte mit Listing oder Diskette an oben angegebene Adresse.
+     Anregungen und Erweiterungen werden - soweit m”glich - in folgenden
+     Versionen bercksichtigt.
+
+
+
+
+Inhalt des Ordners ASM63:
+
+     README  .2_1       das File, da Sie gerade lesen
+     FEHLER  .TXT       Fehlertabelle zur Anzeige in ASMSHELL
+     ASMSHELL.PRG       Shell zum Arbeiten mit Assembler und Dienstprogrammen
+     ASMSHELL.RSC       Resource-Datei hierzu
+     ASMSHELL.INF       Shell-Parameterdatei, eingestellt auf dieses System
+     ASM63   .PRG       Cross-Macro-Assembler fr HD6301
+     ASM63   .INF       Pfad-Datei fr den Direktaufruf von ASM63
+     HEXBIN  .PRG       MOTOROLA-S-Format zu Bin„r-Konverter (Version 1.1)
+INCLUDE\
+     MINIPROZ.DEF       Includefile mit Definitionen des MINIPROZ-Monitors
+     KONSTANT.DEF       Includefile mit h„ufig verwendeten Konstanten
+LISTFILES\
+     WORLD   .LST       Listing zu WORLD.MIC
+     MINIP1  .LST       Listing des MINIPROZ-Monitors
+HEXFILES\
+     WORLD   .HX2       Hex-Ausgabefile zu WORLD.MIC
+     MINIP1  .HX2       Hex-Ausgabefile zu MINIP1.MIC
+QUELLEN\
+     MINIP1  .MIC       Monitorprogramm fr HD63701 (Version 1.0)
+     WORLD   .MIC       Das unvermeidliche "Hallo-Welt"-Programm
+QUELLEN\SAMMLUNG\
+     *       .MIC       25 kleine Programme, die einige M”glichkeiten der
+                        Programmierung des Controllers HD63701 aufzeigen.
+
+
+
+
+                             *************
+                                ACHTUNG:
+                             *************
+
+    Nur MINIP1.MIC und WORLD.MIC drfen ver„ndert werden! Bei Weitergabe der
+    modifizierten Files, Ursprung und nderungsvermerk im Kopf des Programm-
+    listings unbedingt angeben. Andernfalls gilt diese Erlaubnis nicht!
+
+    
+
+
+nderungen zu alten Versionen
+-----------------------------
+
+        V0.3:   Grundversion des Cross-Assemblers (erste PD-Version)
+
+
+        V1.0:   Zwischenversion mit kleinen Erg„nzungen: (BHS, BLO),
+                Ausgabe der Directory bei Eingabe von >?<
+
+
+        V2.0:   Neue Funktionen:
+
+                - Vergr”erung der Symboltabelle auf 10000 Eintr„ge
+                - Lokale Symbole zwischen zwei globalen Symbolen
+                - Erweiterung zum Macro-Assembler
+                - Includefile-Processor
+                - Erweiterung der Pseudobefehle
+                - Erweiterung mit hirarchischen Rechenoperationen bei Symbolen
+
+                Fehlerbeseitigung:
+
+                1. .ASCIN und .ASCIZ mit nachfolgendem Kommentartext werden
+                   nun richtig behandelt.
+
+
+        V2.1:   nderungen, Erg„nzungen und neue Funktionen:
+
+                - Zus„tzlicher Pseudoopcode .ELSEIF erleichtert den
+                  Aufbau von Entscheidungsb„umen.
+                - Ausgabe einer alphabetisch sortierten Symboltabelle bei
+                  Angabe des Pseudoopcodes .SYMTAB
+                - Erweiterung der Macro-Slot-Auswertung fr die šbergabe
+                  einzelner Anfhrungszeichen. Gleichzeitig nderung bei der
+                  šbergabe einzelner Anfhrungszeichen als ASCII-Parameter.
+                - Erweiterung zum Kommandozeilenaufruf des Assemblers,
+                  sowie zum Arbeiten mit Dateiauswahlbox.
+                - Error 33 wird beim Versuch erzeugt einen negativen Versatz
+                  des Adrepointers im Bin„rmode zu erzwingen.
+                - Standard-Startadresse ohne .ORG-Angabe ist $2100
+
+                Fehlerbeseitigung:
+
+                1. Bei nicht alphabetisch sortierten ersten beiden Symbolen
+                   werden jetzt beide Definitionen in der Symboltabelle
+                   wieder gefunden!
+                2. Auswertung von bedingten Assembleranweisungen korrigiert.
+                3. Auswertung von Macro-Parametern korrigiert.
+                4. Schreibweise der Befehlsgruppe AIM, OIM, EIM, TIM ge„ndert:
+                      Indexed jetzt z.B.:   aim  #33,0,x
+                           „quivalent zu:   aim  #33,,x
+                       Direct jetzt z.B.:   oim  #123,tcsr
+                            auch m”glich:   eim  #1,x     (ist kein Indexed!)
+                5. Form-Feed wird jetzt richtig als CTRL/L und ohne
+                   zus„tzliches CR,LF am Seitende ausgegeben.
+                6. šberwachung der Offsetberschreitung bei Branch-Befehlen
+                   (-128 und +128) jetzt richtig.
+                7. Error 11 (Dateiende ohne .END) wird jetzt richtig erkannt.
+
+
+
+
+Allgemeines:
+------------
+
+        Der Cross-Assembler ASM63 und die Assembler-Shell ASMSHELL wurden
+     mit dem GFA-Basic-Entwicklungssystem Version 3.5E D entwickelt.
+
+        Das System verarbeitet Opcodes fr die Prozessortypen HITACHI 6301,
+     MOTOROLA 6800, 6801, 6802 und „hnliche Prozessoren, sowie die darauf
+     aufbauenden Mikrocontroller von HITACHI und MOTOROLA (z.B. HD63701).
+
+        Durch die MACRO-Funktion k”nnen alle Opcodes umdefiniert werden
+     und Macro-Bibliotheken auch fr andere Prozessoren geschaffen werden.
+
+     Der Cross-Assembler kann in drei Betriebsarten gestartet werden:
+
+     1. Durch Anklicken des Programms ASM63.PRG, ohne da sich die Datei
+        ASM63.INF unter dem gleichen Pfad befindet. In diesem Fall wird
+        der Filename von der Tastatur abgefragt. Alle Pfade entsprechen
+        dann entweder dem Pfad des Cross-Assemblers, oder sie werden bei
+        vollst„ndiger Pfadangabe aus dem Filenamen extrahiert. Bei Eingabe
+        eines Fragezeichens wird ein Directorylisting des Startpfades auf
+        dem Bildschirm ausgegeben. Bei Eingabe eines Leernamens (nur CR)
+        wird eine Kurzbeschreibung aller Fehler auf dem Bildschirm ausge-
+        geben. Das Programm kann jederzeit durch Eingabe von Ctrl/C ver-
+        lassen werden.
+
+     2. Durch Anklicken des Programms ASM63.PRG, wobei sich die Datei
+        ASM63.INF unter dem gleichen Pfad befindet. Die Parameterdatei
+        wird dann gelesen und die dort enthaltene Pfadstruktur verwen-
+        det. In der Parameterdatei steht in der ersten Zeile die Versions-
+        nummer des Assemblers. Diese Zeile darf nicht ver„ndert werden! Mit
+        dieser Zeile berprft der Assembler die Konsistenz der Parameter-
+        datei. Bei Unstimmigkeiten wird die Parameterdatei nicht verwendet
+        und wie unter Punkt 1. beschrieben fortgefahren! In den folgenden
+        Zeilen steht:
+
+           Zeile 2  =  Pfad fr das Quellfile (wird vom Assembler ver„ndert)
+           Zeile 3  =  Pfad fr das Listfile (bleibt unver„ndert)
+           Zeile 4  =  Pfad fr das Includefile (bleibt unver„ndert)
+           Zeile 5  =  Pfad fr das Hex- und Bin„rfile (bleibt unver„ndert)
+
+        Nach korrektem Einlesen der Parameterdatei erscheint eine Filese-
+        lektorbox, mit der das Quellfile ausgew„hlt werden mu. Beim Be-
+        st„tigen mit "OK" wird der neue Quelldateipfad in eine neue Para-
+        meterdatei gepeichert. Die alte Datei geht dabei immer verloren!
+        Der Pfade der Zeilen 3 bis 5 der Parameterdatei werden vom Assembler
+        nicht ver„ndert. Sie k”nnen nur mit Hilfe eines Editors in der Para-
+        meterdatei direkt ver„ndert werden. Wird die Fileselektorbox mit
+        "ABBRUCH" verlassen, erfolgt die Ausgabe der Fehlerkurzbeschreibung.
+        Durch Eingabe von Ctrl/C kann das Programm dann jederzeit (sofern
+        noch keine neue Fileselektorbox erschienen ist) abgebrochen werden.
+
+     3. Der Crossassembler kann auch von einer Command-Shell aus gesteuert
+        werden. Dazu mu nach Angabe des Namens ASM63 das zu bersetzende
+        Quellfile (ggf. mit kompletten Pfad) folgen. Als Optionen k”nnen
+        zus„tzlich drei Pfade bergeben werden. Alle Optionen beginnen mit
+        einem Minuszeichen und einem Steuerbuchstaben. Unmittelbar dahinter
+        (ohne Zwischenraum) steht dann der entsprechende Pfad. Die Steuer-
+        zeichen lauten: -L fr den Listpfad, -O fr den Ausgabepfad und
+        -I fr den Includepfad. Die Reihenfolge der Optionen ist nicht
+        festgelegt. Alle Angaben in der Kommandozeile mssen durch ein
+        SPACE-Zeichen getrennt werden! Als Pfadangeben k”nnen auch direkte
+        Ger„tekennzeichen verwendet werden (z.B. -LPRN: erzeugt unmittelbar
+        w„hrend der šbersetzung ein Druckerlisting, wenn im Quellfile die
+        Option .LIST und .FILE gesetzt ist).
+
+     
+        Beim Quellfilenamen kann die Extension weggelassen werden, wenn das
+     File mit .MIC endet. Der Cross-Assembler sucht dann automatisch ein
+     File mit dieser Extension. Beim Programmlauf wird das Ausgabefile
+     (Extension .HX2 oder .BIN) und ggf. ein Listfile (Extension .LST) er-
+     zeugt. Wird das Quellfile nicht gefunden, so wird erneut ein Quellfile-
+     name angefragt, wenn der Assembler nicht durch einen Kommandozeilen-
+     aufruf (siehe oben 3.) gestartet wurde.
+
+        Der Cross-Assembler kann durch Eingabe von CTRL/C jederzeit abge-
+     brochen werden. W„hrend der šbersetzung eines Quellfiles wird bei einem
+     Abbruchversuch die aktuelle Eingabezeilennummer ausgegeben und es
+     erfolgt eine Sicherheitsabfrage. Bei Beantwortung mit j oder J wird die
+     šbersetzung abgebrochen. Alle offenen Ausgabefiles (Listing/Hexdump)
+     werden an der aktuellen Stelle geschlossen. Alte Files gehen also in
+     jedem Fall verloren!
+
+        Der Assembler gibt an das aufrufende Programm einen Fehlercode
+     zurck. Dabei sind folgende Werte m”glich: 0 entspricht einem fehler-
+     freien Programmablauf. Negative Werte enthalten die Anzahl der im
+     Quellfile aufgefundenen Fehler (Absolutwert bilden!). Positive Werte
+     sind Systemfehler. +1 bedeutet Abbruch durch CTRL/C, +2 bedeutet
+     Quellfile nicht gefunden. Der Fehler +2 kann nur beim Aufruf ber eine
+     Kommandoshell hervorgerufen werden, da der Assembler in den anderen
+     F„llen erneut die Eingabe eines Filenamen anfordert.
+
+        Alle Befehle, Macros und Symbole k”nnen mit groen oder kleinen
+     Buchstaben geschieben werden. Es wird  k e i n e  Unterscheidung zwi-
+     schen Gro- und Kleinschreibung gemacht. Alle Mnemonics werden ent-
+     sprechend der Angabe von HITACHI bzw. MOTOROLA geschrieben. Alte
+     Bezeichnungen mit Zwischenraum wie z.B. >LDA B< sind nicht zul„ssig!
+     Zus„tzlich zu den definierten Mnemonics kann BCC durch die alternative
+     Schreibweise BHS und BCS durch BLO ersetzt werden.
+
+        Bei Befehlen, die sowohl DIRECT als auch EXTENDED m”glich sind, kann
+     mit < ein DIRECT und mit > ein EXTENDED erzwungen werden. Dazu mu das
+     Sonderzeichen an erster Stelle im Operanden stehen.
+
+        Alle Fehler werden durch Zahlen codiert und im Listing anstelle des
+     bersetzten Codes ausgegeben. Eine šbersicht ber alle Fehlercodes er-
+     h„lt man durch Eingabe eines RETURN nach dem Start des Programms.
+
+
+
+
+Fehlercodes:
+------------
+
+        Der Cross-Assembler verschlsselt w„hrend der šbersetzung auftre-
+     tende Fehler durch eine zweistellige Zahl. Diese Zahl wird anstelle des
+     bersetzten Codes in das Listing eingefgt. Dadurch wird die Anzahl der
+     Zeilen im Listing bei Auftreten von Fehlern nicht erh”ht! Dies erleich-
+     tert die Fehlersuche in umfangreichen Programmen, da die Zeilennummer
+     im Fehlerlisting immer der Quellzeilennummer entspricht.
+
+        Das Fehlerlisting wird immer auch auf dem Bildschirm ausgegeben, un-
+     abh„ngig vom Zustand der Steueranweisungen .LIST, .NLIST und .FILE.
+     Treten Fehler bereits im Pass 1 auf, so wird der weitere Programmlauf
+     nach Erreichen von .END abgebrochen. Ein durch .LIST und .FILE erzeugtes
+     Listfile enth„lt in diesem Fall nur die fehlerhaften Zeilen!
+
+     Folgende Fehler k”nnen w„hrend der šbersetzung auftreten:
+
+         1 = Symboltabelle bergelaufen
+         2 = Ungltiges Zeichen im Symbolfeld
+         3 = Ungltiges Zeichen im Befehlsfeld 
+         4 = Ungltiges Zeichen im Operandenfeld
+         5 = Symbol nicht definiert
+         6 = Operand fehlt
+         7 = Opcode oder MACRO unbekannt
+         8 = Unbekannter Pseudo-Opcode
+         9 = Unbekannte Adressierungsart
+        10 = Stringende nicht gefunden
+        11 = Datei ohne .END
+        12 = Relative Sprungweite zu gro
+        13 = Symbol oder .MACRO bereits definiert
+        14 = Ungltiges lokales Symbol
+        15 = .ELSE, ELSEIF oder .ENDIF ohne vorheriges .IF
+        16 = .IF zu tief verschachtelt
+        17 = Macroaufruf zu tief verschachtelt
+        18 = Division durch Null
+        19 = Klammerfehler im Rechenausdruck
+        20 = Rechenausdruck zu komplex
+        21 = Rechenausdruck unvollst„ndig
+        22 = Operator ohne Operand im Rechenausdruck
+        23 = .INCL zu tief verschachtelt
+        24 = Ende der .MACRO-Definition fehlt
+        25 = .MACRO-Definitionstabelle bergelaufen
+        26 = Ungltige Symboldefinition im .MACRO
+        27 = Ungltiger Parameter im .MACRO-Aufruf
+        28 = Fehler in Parameterliste des .MACROs
+        29 = Ungltige .MACRO-Definition
+        30 = .ENDMAC ohne vorheriges .MACRO
+        31 = Includefile nicht gefunden
+        32 = Durch .ERROR selbst erzeugter Fehler
+        33 = Kein negativer Offset erlaubt im Bin„rmode
+
+
+
+
+Pseudobefehle:
+--------------
+
+        Alle Pseudobefehle beginnen mit einem Punkt. Beim Start des
+     Assemblers ist folgende Grundeinstellung vorhanden:
+
+                o   Ausgabe als Motorola-S-Record
+                o   Keine Ausgabe des Listings in ein File
+                o   Keine Expansion von Macors im Listing
+                o   Keine Ausgabe einer Symboltabelle
+                o   .6301
+                o   .NLIST
+                o   .ORG $2100
+                o   Keine Ausgabe einer .TITLE-Zeile
+
+     Tabelle aller Pseudoopcodes (kleine Buchstaben sind auch erlaubt):
+     
+      .6301     Freigabe aller HD6301-Opcodes fr die Assemblierung
+      .ASCII    Eingabe von ASCII-Text zwischen 2 beliebigen Zeichen
+      .ASCIZ    wie .ASCII jedoch am Ende zus„tzlich ein Nullbyte
+      .ASCIN    wie .ASCII jedoch letztes Zeichen wird negativ (Bit8=1)
+      .BIN      erzeugt Bin„rfile mit Extension *.BIN anstelle von Hexfile,
+                als Parameter kann ein Filename (ohne Pfad) angegeben werden
+      .BLKB     reserviert Bytes. Anzahl im Operanden
+      .BLKW     reserviert W”rter. Anzahl im Operanden
+      .BYTE     Eingabe von Bytes. Mehrere Bytes durch Komma trennen
+      .DB       Alias fr .BYTE
+      .DC       Alias fr .ASCII
+      .DS       Alias fr .BLKB
+      .DW       Alias fr .WORD
+      .ELSE     Alternative Anweisung nach .IF-Codes
+      .ELSEIF   Alternative Anweisung nach .IF-Codes mit zus„tzlicher
+                Angabe einer neuen Bedingung wie bei .IF
+      .END      Letzter Befehl in einem Programm (mu vorhanden sein!)
+      .ENDIF    Ende eines bedingten Bereiches
+      .ENDMAC   Ende einer MACRO-Definition
+      .EQU      Definiert ein neues Symbol (Alias fr =)
+      .ERROR    Erzeugt den Fehler #32. Als Argument kann ein Text angegeben
+                werden, der dann im Fehlerlisting erscheint
+      .EXPAND   erweitert das Listing um die vollst„ndige Darstellung aller
+                Zeilen bei Macroaufrufen, Includefiles und .ASCII .ASCIN
+                .ASCIZ .BYTE .DB .DC .DW .WORD und .WORDS
+      .FILE     Umleiten des Listings in ein Listfile *.LST
+      .IFDEF    Code wird assembliert, wenn als Parameter angegebenes
+                Symbol bereits definiert wurde
+      .IFNDEF   Code wird assembliert, wenn als Parameter angegebenes
+                Symbol noch nicht definiert wurde
+      .IF       Anfang eines bedingten Bereiches, wenn als Parameter angege-
+                bene Bedingung erfllt ist
+      .IFN      Anfang eines bedingten Bereiches, wenn als Parameter angege-
+                bene Bedingung nicht erfllt ist
+      .INCL     Fgt das als Parameter angegebene File in das Programm ein,
+                Filename ohne Extension verwendet automatisch *.DEF
+      .LIST     Einschalten des Listings
+      .MACRO    Beginn einer MACRO-Definition, Parameter ist der Macroname
+      .N6301    Sperren aller HD6301-Opcodes fr die Assemblierung
+      .NLIST    Ausschalten des Listings
+      .ORG      Angabe einer neuen Adresse als Parameter
+      .PAGE     Beginn einer neuen Seite im Listing
+      .SET      Definiert ein neues Symbol oder weist einem bereits defi-
+                nierten Symbol einen neuen Wert zu
+      .SYMTAB   Ausgabe einer alphabetisch sortierten Symboltabelle am
+                Ende des Listings
+      .TITLE    nachfolgender Text wird in den Kopf des Listing eingefgt
+                (kann beliebig oft wiederholt werden)
+      .WORD     Wie .BYTE jedoch fr W”rter
+      .WORDS    Wie .WORD jedoch high- und low-Byte vertauscht
+
+
+
+
+Includefiles:
+-------------
+
+        Mit dem Pseudobefehl .INCL kann ein als Paramter angegebenes
+     File an der aktuellen Stelle in das Inputfile eingefgt werden.
+     Der Filename darf keine Pfadangabe enthalten. Hierzu sind die
+     Optionen in ASM63.INF oder in der Kommandozeile vorhanden!
+     Die Extension des Includefilenamens kann weggelassen werden. Es
+     wird dann automatisch .DEF verwendet.
+
+        Includefiles k”nnen bis zu 3 Ebenen verschachtelt werden. In jeder
+     Ebene (jedem Includefile) k”nnen dagegen  n a c h e i n a n d e r
+     beliebig viele Includefiles (.INCL-Befehle) aufgerufen werden!
+
+
+
+
+Symbole:
+--------
+
+        Symbole k”nnen gobal und lokal definiert sein. Globale Symbole
+     mssen mit einem Buchstaben beginnen und drfen alle anderen Zeichen
+     (auch Sonderzeichen!) auer SPACE ($20), TAB ($09) und Dollar "$"
+     enthalten. Gobale Symbole sind w„hrend des gesamten Programmlaufs nur
+     ein Mal definierbar und an jeder Stelle des Programms bekannt. Eine
+     Umdefinition ist nur mit dem Pseudobefehl .SET m”glich!
+
+        Symbole drfen "beliebig" lang sein (Fehler treten erst bei mehr als
+     32767 Buchstaben auf!). Symbole drfen einzeln in einer Zeile stehen.
+     Sie werden dann mit der aktuellen Adresse in dieser Zeile in die Sym-
+     boltabelle aufgenommen. Ein Doppelpunkt am Ende des Symbols ist nicht
+     erforderlich! Dieser Doppelpunkt wird mit in den Symbolnamen aufge-
+     nommen!
+
+        Lokale Symbole beginnen immer mit einer Ziffer zwischen 1 und 99
+     und mssen am Ende mit dem Sonderzeichen "$" abgeschlossen werden. Lo-
+     kale Symbole existieren nur zwischen zwei globalen Symbolen und k”nnen
+     daher beliebig oft neu definiert werden. Lokale Symbole werden i.d.R.
+     bei Sprungbefehlen verwendet, k”nnen aber auch fr Zuweisungen einge-
+     setzt werden.
+
+        Am Anfang eines Macroaufrufs kann ein globales oder lokales Symbol
+     stehen. Innerhalb einer Macrodefinition k”nnen nur lokale Symbole
+     definiert werden! Die innerhalb eines Macros definierten lokalen
+     Symbole existieren nur im Macro. D.h. auerhalb des Macros k”nnen
+     gleichnamige lokale Symbole nocheinmal definiert werden! Dadurch
+     ben”tigt man keine Kenntnis der bereits im Macro verwendeten lokalen
+     Symbolnamen. Entsprechendes gilt auch beim Verschachteln von Macros.
+     Jede Macroebene hat also voneinander unabh„ngige lokale Symbole!
+
+        Es k”nnen maximal 10000 Symbole verwendet werden. Als Symbol gelten
+     alle hierbei alle mit = oder .EQU oder .SET definierten Symbole, alle
+     Symbole vor und in einem Macroaufruf oder vor einem Opcode, alle loka-
+     len Symbole  (bei Verwendung innerhalb von Macros z„hlt jede Verwendung
+     in einem Macroaufruf getrennt) und alle Macronamen.
+
+        Das Zeichen "*" dient zur šbergabe der aktuellen Adresse w„hrend
+     der Assemblierung. Es wird immer die Adresse am Anfang der Zeile ohne
+     die in der Zeile definierten Bytes bergeben. Die Anweisung: "BRA *"
+     erzeugt daher einen "Sprung auf sich selbst". Die Adresse kann nicht
+     durch den Ausdruck:  *=*+2  ver„ndert werden (.ORG verwenden). In
+     Rechenoperationen wird der Adreoperator richtig erkannt:  test=**2
+     weist dem Symbol "test" den doppelten Wert der aktuellen Adresse zu.
+
+
+
+
+Rechenoperationen und Vergleiche:
+---------------------------------
+
+        Mit Symbolen k”nnen alle folgenden Rechenoperationen durchgefhrt
+     werden (aufgelistet nach Priorit„t):
+
+
+     h”chste    '   ASCII-Code des nachfolgenden Zeichens bernehmen
+                ~   nachfolgendes Zeichen bitweise invertieren
+                @   Symbol fr aktuelle Adresse am Zeilenanfang
+            * / :   Multiplikation, Division, Modulus
+              + -   Addition, Subtraktion oder Vorzeichenwechsel
+              > <   higher 8 Bit, lower 8 Bit
+                &   logische UND-Verknpfung
+                ^   logische EXOR-Verknpfung
+     tiefste    |   logische ODER-Verknpfung
+
+
+        Zur Ver„nderung der Hirarchie k”nnen Klammern verwendet werden. Alle
+     Rechenoperationen erfolgen im Integer-Format ohne Rundung Modulus $ffff.
+
+        Vergleiche sind als Zahlen- oder Stringvergleiche m”glich. Es sind
+     folgende Operatoren erlaubt:
+
+
+                <   linker Ausdruck kleiner rechter Ausdruck
+      =<  oder  <=  linker Ausdruck kleiner/gleich rechter Ausdruck
+                =   linker Ausdruck gleich rechter Ausdruck
+      ><  oder  <>  linker Ausdruck ungleich rechter Ausdruck
+      =>  oder  >=  linker Ausdruck gr”er/gleich rechter Ausdruck
+                >   linker Ausdruck gr”er rechter Ausdruck
+
+
+        Die Komplexit„t jedes Ausdrucks ist auf insgesamt 50 Elemente (Summe
+     aus Anzahl der Operatoren, Klammern, Ziffern und Symbole) begrenzt.
+
+        Wenn nur ein Ausdruck ohne Vergleichsoperator angegeben ist, erfolgt
+     automatisch ein Vergleich mit Null (Ausdruck = 0).
+
+        Ein String wird beim Vergleich immer durch Anfhrungszeichen (")
+     definiert. Stringvergleiche erfolgen buchstabenweise vom ersten bis
+     zum letzten Buchstaben, entsprechend der Reihenfolge im ASCII-Code.
+     Bei einem einzelnen String wird die Stringl„nge mit Null verglichen
+     (L„nge <> 0).
+
+        Gemischte Vergleiche (String mit Symbol oder Zahl) sind nicht m”g-
+     lich. Verknfungen mehrerer Vergleiche durch UND oder ODER in einer
+     Zeile sind nicht m”glich.
+
+        Jeder Vergleich hat ein boolsches Ergebnis (wahr oder falsch).
+     Dieses Ergebnis wird von den Pspeudooperationen .IF, .IFN, .ELSE
+     und .ELSEIF weiterverarbeitet.
+
+
+
+
+Bedingte Assemblierung:
+-----------------------
+
+        Mit den Pseudoopcodes .IF, .IFN, .IFDEF, .IFNDEF, .ELSE, .ELSEIF
+     und .ENDIF lassen sich bedingte Assemblierungen durchfhren. Bei .IF,
+     .IFN und .ELSEIF kann  e i n  Vergleich als Operand angegeben werden.
+     Verknpfungen mehrerer Bedingungen sind nur ber verschachtelte IF-
+     Abfragen m”glich!
+
+        Es k”nnen bis zu 10 IF-Ebenen verschachtelt werden. Bei erfllter
+     IF-Bedingung wird der anschlieende Code bis zur n„chsten IF-Bedingung
+     oder zu den Pseudoopcodes .ELSE, .ELSEIF oder .ENDIF assembliert.
+
+
+
+
+Macros:
+-------
+
+        Macros mssen mit einem Buchstaben beginnen und k”nnen beliebig
+     lang sein. Durch einen .MACRO-Befehl definierte Macronamen k”nnen den
+     gleichen Namen, wie bereits definierte andere Symbole oder Opcodes
+     haben. Macrodefinitionen haben eine h”here Priorit„t als die vordefi-
+     nierten Opcodes. Dadurch k”nnen alle Opcodes umdefiniert werden.
+
+        Die Summe aller Macro-Definitionszeilen darf 9000 nicht berschrei-
+     ten. Es k”nnen maximal 1000 Macros definiert werden. Innerhalb einer
+     Macro-Definition kann keine neue Macro-Definition begonnen werden.
+
+        Macros k”nnen mit bis zu 9 Parametern definiert werden. Die Para-
+     meter werden erst beim Macroaufruf hinter dem Macronamen angegeben und
+     durch Kommas getrennt. Alle Parameter werden als String behandelt und
+     erst beim Aufruf ausgewertet. Wenn als Parameter ein Komma oder ein
+     String mit Komma bergeben werden soll, so mu der Parameter in An-
+     fhrungszeichen gesetzt werden (z.B. insgesamt drei Parameter, zweiter
+     Parameter enth„lt ein Komma:  TEST,"3,X",$FF23).
+
+        Zwei unmittelbar nebeneinander stehende Anfhrungszeichen werden
+     durch ein einzelnes Anfhrungszeichen im Parameterstring ersetzt.
+     Diese Substitution darf innerhalb eines Parameters beliebig oft
+     vorkommen. Sie ist auch zul„ssig innerhalb eines durch Anfhrungs-
+     zeichen markierten Parameters (siehe oben). Beispiel:
+     "Anfhrungszeichen = """  ->  Anfhrungszeichen = "
+
+        Der erste Parameter eines MACROS wird durch SPACE oder TAB vom
+     Macronamen getrennt. Zwischen den Parametern erfolgt die Trennung durch
+     Kommas. Fehlende Parameter bei einem Macro-Aufruf mssen innerhalb
+     einer Liste durch Kommas ersetzt werden. Fehlende Parameter am Ende
+     eines Macro-Aufrufs k”nnen einfach weggelassen werden. Als Parameter
+     k”nnen alle Symbole oder Zahlen verwendet werden.
+     
+        Parameter werden durch ? mit einer nachfolgenden Ziffer zwischen
+     1 und 9 angesprochen. Die Existenz eines Parameters kann z.B. mit der
+     Stringopoeration:  .IF "?1"  abgefragt werden. Nachfolgender Code
+     wird dann bei Vorhandensein des 1. Parameters erzeugt.
+
+        Parameter k”nnen innerhalb eines Strings beliebig oft auftreten.
+     Beim Aufruf des Macros werden die Parameter dann entsprechend ersetzt:
+     (z.B.  .ASCIZ /?1 ist?3gleich ?1?2/).
+
+
+
+
+Ausgabeformat:
+--------------
+
+        Der Crossassembler erzeugt ohne den Pseudobefehl .BIN ein Ausgabe-
+     file im MOTOROLA-S-Format. Bei bin„rer Ausgabe werden Leerbereiche, die
+     durch ein Versetzen des Adresszeigers mit .ORG entstehen, automatisch
+     mit $FF-Bytes aufgefllt. Dadurch kann das Bin„rfile unmittelbar fr
+     EPROMMer verwendet werden.
+
+
+
+
+Sonstiges:
+----------
+
+        Es existiert eine eingeschr„nkte Version des Cross-Assemblers
+     fr den AMIGA (keine MACROS, keine lokalen Symbole keine hirarchischen
+     Rechenoperationen, keine Vergleiche, keine bedingte Assemblierung,
+     weniger Pseudooperationen).
+
+        Eine mit der Version 2.1 vergleichbare Fassung ist nach Erscheinen
+     des GFA-BASIC-Compilers auch fr PCs erh„ltlich (Frhjahr/Sommer 1991).
+
+        Anregungen und Fehlerhinweise (mit Beispiel) bitte an oben angege-
+     bene Adresse.
+

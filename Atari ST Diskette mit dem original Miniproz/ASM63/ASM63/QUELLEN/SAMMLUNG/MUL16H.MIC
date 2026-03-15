@@ -1,0 +1,50 @@
+        .list
+        .file
+        .title  2.3.1. Kaskadierung von Einzelprodukten
+
+mkant   .equ    $3000           ; 16 Bit Speicher
+mkator  .equ    $3002           ; 16 Bit Speicher
+prod    .equ    $3004           ; 32 Bit Ergebnisspeicher
+m1      .equ    132
+m2      .equ    379
+
+start   ldd     #m1             ; Zahl1
+        std     mkant
+        ldd     #m2             ; Zahl2
+        std     mkator
+        bsr     mul16h          ; Aufruf des Multiplikationsprogramms
+        swi                     ; Programmende
+
+;************************************************
+;  MUL16H zerst”rt F,A,X, PROD = MKANT * MKATOR
+;************************************************
+
+mul16h  ldd     #0
+        std     prod            ; Ergebnisspeicher (higher Wort) l”schen
+        ldaa    mkator+1
+        ldab    mkant+1
+        mul                     ; xxxxPPPP = xxTT * xxNN
+        std     prod+2          ; 1. Teilergebnis speichern
+        ldaa    mkator+1
+        ldab    mkant
+        mul                     ; xxPPPPxx = xxTT * NNxx
+        addd    prod+1          ; 2. Teilergebnis
+        std     prod+1          ; addieren
+        bcc     1$
+        inc     prod            ; šberlauf addieren
+1$      ldaa    mkator
+        ldab    mkant+1
+        mul                     ; xxPPPPxx = TTxx * xxNN
+        addd    prod+1          ; 3. Teilergebnis
+        std     prod+1          ; addieren
+        bcc     2$
+        inc     prod            ; šberlauf addieren
+2$      ldaa    mkator
+        ldab    mkant
+        mul                     ; PPPPxxxx = TTxx * NNxx
+        addd    prod            ; 4. Teilergebnis
+        std     prod            ; addieren
+        rts
+
+        .end
+

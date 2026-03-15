@@ -1,0 +1,24 @@
+        .list
+        .file
+        .title  2.2.1 Addition von Bytes
+;********************************************
+;  24-Bit Addition
+;********************************************
+
+zahl1   .equ    $3000           ; h”chstes Byte der Zahl1
+zahl2   .equ    $3010           ; h”chstes Byte der Zahl2
+summe   .equ    $3020           ; h”chstes Byte der Summe
+
+start   ldaa    zahl1+2         ; beginne beim niederwertigsten
+        adda    zahl2+2         ; Byte
+        staa    summe+2         ; 1. Teilergebnis speichern
+        ldaa    zahl1+1         ; mittleres Byte bearbeiten
+        adca    zahl2+1         ; šbertrag mit addieren !
+        staa    summe+1         ; 2. Teilergebnis speichern
+        ldaa    zahl1           ; h”chstes Byte bearbeiten
+        adca    zahl2           ; šbertrag mit addieren !
+        staa    summe           ; 3. Teilergebnis speichern
+        swi                     ; Programmende
+
+        .end
+

@@ -1,0 +1,127 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   FIR.MIC        03.01.1991    12:34:44    Page: 1
+3.2.2. FIR-Tiefpaû-Filter (Butterworth) fg=25Hz
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  3.2.2. FIR-Tiefpaû-Filter (Butterworth) fg=25Hz
+   4  2000                       .incl   miniproz
+   5  2000                       .incl   konstant
+   6  2000               
+   7  2000               buffer  .equ    $40             ; Ringbuffer fÅr 23 Abtastwerte
+   8  2000               wrpoi   .equ    buffer+23       ; Schreibzeiger in den Buffer
+   9  2000               summe   .equ    wrpoi+2         ; Rechenregister (16-Bit)
+  10  2000               tabpoi  .equ    summe+2         ; Tabellenzeiger
+  11  2000               count   .equ    tabpoi+2        ; ZÑhler fÅr Schleifendurchlauf
+  12  2000               zeit    .equ    1229
+  13  2000               
+  14  2000   86 7E       start   ldaa    #jmp            ; opcode von "JMP"
+  15  2002   B7 3F EE            staa    jocf
+  16  2005   CE 20 1C            ldx     #timer          ; Sprungadresse
+  17  2008   FF 3F EF            stx     jocf+1
+  18  200B   DC 09               ldd     timerh          ; aktuellen counter laden (16-Bit)
+  19  200D   C3 04 CD            addd    #zeit           ; 1229 tics = 1 Millisekunde
+  20  2010   DD 0B               std     ocrh
+  21  2012   72 08 08            oim     #%00001000,tcsr ; OCF-Interrupt im TCSR setzen
+  22  2015   CE 00 40            ldx     #buffer         ; 23 Byte Ringbuffer
+  23  2018   DF 57               stx     wrpoi
+  24  201A   0E                  cli                     ; Interrupt freigeben
+  25  201B   3F                  swi                     ; RÅcksprung in den Monitor
+  26  201C               
+  27  201C               ;*****************************************************
+  28  201C               ;  Timer-Interrupt  (1598/1595 Taktzyklen)
+  29  201C               ;*****************************************************
+  30  201C               
+  31  201C   96 08       timer   ldaa    tcsr            ; TCSR lesen = Reset OCF-Bit
+  32  201E   DC 0B               ldd     ocrh            ; Sollzeit laden (16-Bit)
+  33  2020   C3 04 CD            addd    #zeit           ;    und 2 Millisekunden addieren
+  34  2023   DD 0B               std     ocrh            ; neuen Timer programmieren
+  35  2025   96 59               ldaa    summe           ; Ausgabewert=(Summe/256) laden
+  36  2027   B7 60 00            staa    da              ;    und ausgeben...
+  37  202A   B6 40 00            ldaa    ad              ; letzten Analogwert holen
+  38  202D   B7 40 00            staa    ad              ;    und Wandler erneut anstoûen
+  39  2030   8B 80               adda    #$80            ; Offset erzeugen fÅr D/A-Wandler
+  40  2032               
+  41  2032               ; neuen A/D-Wert im Ringbuffer speichern
+  42  2032               
+  43  2032   DE 57               ldx     wrpoi           ; Position des neuen Elements
+  44  2034   A7 00               staa    0,x             ; neuen Wert im Buffer speichern
+  45  2036   08                  inx                     ; Bufferpointer erhîhen
+  46  2037   8C 00 57            cpx     #wrpoi          ; Bufferende erreicht ?
+  47  203A   26 03               bne     1$              ; nein...
+  48  203C   CE 00 40            ldx     #buffer         ; ja: erstes Element laden
+  49  203F   DF 57       1$      stx     wrpoi           ; neuen Schreibpointer retten
+  50  2041               
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   FIR.MIC        03.01.1991    12:34:46    Page: 2
+3.2.2. FIR-Tiefpaû-Filter (Butterworth) fg=25Hz
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+  51  2041               ; Berechnung des Ausgangswertes
+  52  2041               
+  53  2041   7F 00 59            clr     summe           ; 16 Bit Summe
+  54  2044   7F 00 5A            clr     summe+1         ;    lîschen
+  55  2047   CE 20 71            ldx     #konst          ; Pointer auf Konstantentabelle
+  56  204A   DF 5B               stx     tabpoi          ; Pointer speichern
+  57  204C   DE 57               ldx     wrpoi           ; aktueller Schreibpointer
+  58  204E               
+  59  204E               ; Berechnung mit positiven Koeffizienten:
+  60  204E               
+  61  204E   86 71               ldaa    #konst          ; 15 positive Werte
+  62  2050   97 5D               staa    count           ; SchleifenzÑhler setzen
+  63  2052   E6 00       loop    ldab    0,x             ; einen Bufferwert laden
+  64  2054   08                  inx
+  65  2055   8C 00 57            cpx     #wrpoi          ; Bufferende erreicht ?
+  66  2058   26 03               bne     1$              ; nein...
+  67  205A   CE 00 40            ldx     #buffer         ; ja: erstes Element laden
+  68  205D   3C          1$      pshx                    ; Pointer retten
+  69  205E   DE 5B               ldx     tabpoi          ; Tabellenpointer fÅr Koeffiziententabelle
+  70  2060   A6 00               ldaa    0,x             ; Koeffizient laden
+  71  2062   08                  inx
+  72  2063   DF 5B               stx     tabpoi          ; neuen Tabellenzeiger speichern
+  73  2065   38                  pulx
+  74  2066   3D                  mul                     ; Teilprodukt berechnen
+  75  2067   D3 59               addd    summe
+  76  2069   DD 59               std     summe           ; Summe abspeichern
+  77  206B   7A 00 5D            dec     count           ; alle Werte bearbeitet ?
+  78  206E   26 E2               bne     loop
+  79  2070   3B                  rti
+  80  2071               
+  81  2071               ;*********************************************************
+  82  2071               ;  Tabelle mit FIR-Konstanten in umgekehrter Reihenfolge
+  83  2071               ;*********************************************************
+  84  2071               
+  85  2071   01010202    konst   .byte   $01,$01,$02,$02,$03
+  86  2076   0406080B            .byte   $04,$06,$08,$0b,$0e
+  87  207B   141B2533            .byte   $14,$1b,$25,$33,$45
+  88  2080               
+  89  2080                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\FIR.HX2
+Elapsed time: 6.2 sec.

@@ -1,0 +1,37 @@
+        .list
+        .file
+        .title  2.4.2. Schiebedivision mit beliebigen 16-Bit-Werten
+
+divid   .equ    $3000
+divis   .equ    $3002
+
+start   ldd     #163            ; Divisor laden
+        std     divis
+        ldd     #12345          ; Dividend laden
+        std     divid
+        bsr     div16           ; Aufruf des Divisionsprogramms
+        swi                     ; Programmende
+
+;********************************************************
+;  DIV16 zerstîrt F,A,B,X, DIVID / DIVIS = DIVID Rest D
+;********************************************************
+
+div16   ldx     #16             ; Schiebedivision fÅr 16 Bit
+        clrb
+        clra
+1$      asl     divid+1         ; 0-Ergebnisbit setzen
+        rol     divid
+        rolb
+        rola
+        subd    divis           ; Divisor enthalten?
+        bcc     3$              ; ja...
+        addd    divis           ; nein, Originalwert wieder herstellen
+        bra     2$
+
+3$      inc     divid+1         ; 1-Ergebnisbit setzen
+2$      dex                     ; alle Bits bearbeitet?
+        bne     1$              ; nein...
+        rts
+
+        .end
+

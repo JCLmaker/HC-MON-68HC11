@@ -1,0 +1,19 @@
+        .list
+        .file
+        .title  2.1.1. L”schen mit Feldgrenzenabfrage
+;********************************************
+;  L”schen eines 100-Byte Feldes
+;********************************************
+
+feld    .equ    $3000
+anzahl  .equ    100
+
+start   ldx     #feld           ; Anfangsadresse des Feldes laden
+1$      clr     0,x             ; Feldelement l”schen
+        inx                     ; n„chstes Element adressieren
+        cpx     #feld+anzahl    ; Ende des Feldes erreicht?
+        bne     1$              ; noch nicht...
+        swi                     ; Programmende
+
+        .end
+

@@ -1,0 +1,57 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   DIV16.MIC      03.01.1991    12:33:00    Page: 1
+2.4.2. Schiebedivision mit beliebigen 16-Bit-Werten
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  2.4.2. Schiebedivision mit beliebigen 16-Bit-Werten
+   4  2000               
+   5  2000               divid   .equ    $3000
+   6  2000               divis   .equ    $3002
+   7  2000               
+   8  2000   CC 00 A3    start   ldd     #163            ; Divisor laden
+   9  2003   FD 30 02            std     divis
+  10  2006   CC 30 39            ldd     #12345          ; Dividend laden
+  11  2009   FD 30 00            std     divid
+  12  200C   8D 01               bsr     div16           ; Aufruf des Divisionsprogramms
+  13  200E   3F                  swi                     ; Programmende
+  14  200F               
+  15  200F               ;********************************************************
+  16  200F               ;  DIV16 zerstîrt F,A,B,X, DIVID / DIVIS = DIVID Rest D
+  17  200F               ;********************************************************
+  18  200F               
+  19  200F   CE 00 10    div16   ldx     #16             ; Schiebedivision fÅr 16 Bit
+  20  2012   5F                  clrb
+  21  2013   4F                  clra
+  22  2014   78 30 01    1$      asl     divid+1         ; 0-Ergebnisbit setzen
+  23  2017   79 30 00            rol     divid
+  24  201A   59                  rolb
+  25  201B   49                  rola
+  26  201C   B3 30 02            subd    divis           ; Divisor enthalten?
+  27  201F   24 05               bcc     3$              ; ja...
+  28  2021   F3 30 02            addd    divis           ; nein, Originalwert wieder herstellen
+  29  2024   20 03               bra     2$
+  30  2026               
+  31  2026   7C 30 01    3$      inc     divid+1         ; 1-Ergebnisbit setzen
+  32  2029   09          2$      dex                     ; alle Bits bearbeitet?
+  33  202A   26 E8               bne     1$              ; nein...
+  34  202C   39                  rts
+  35  202D               
+  36  202D                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\DIV16.HX2
+Elapsed time: 1.2 sec.

@@ -1,0 +1,24 @@
+        .list
+        .file
+        .title  4.1. ProgrammgerÅst fÅr Timer-Polling-Technik
+        .incl   miniproz.def
+
+tics    .equ    24576           ; 20ms Intervall bei f=1.2288 MHz
+
+; Initialisierung des Timers (erstes Intervall ist <>20ms!)
+
+loop    ldaa    tcsr            ; OCF-Bit lîschen
+        ldd     ocrh            ; letzten Vergleichswert laden
+        addd    #tics           ; und Intervall addieren
+        std     ocrh            ; Timer programmieren
+;
+;  An dieser Stelle muû das periodisch alle 20ms zu durchlaufende
+;  Programmsegment stehen. Das Programmsegment darf aber nicht lÑnger
+;  als 20ms dauern, weil sonst der Timer schon abgelaufen ist !!!
+;
+1$      tim     #%01000000,tcsr ; OCF-Bit gesetzt?  (Timer abgelaufen?)
+        beq     1$              ; nein...
+        bra     loop
+
+        .end
+

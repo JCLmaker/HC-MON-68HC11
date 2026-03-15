@@ -1,0 +1,45 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   DIVB10.MIC     03.01.1991    12:32:54    Page: 1
+2.4.1. Dezimale Schiebedivision
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  2.4.1. Dezimale Schiebedivision
+   4  2000               
+   5  2000   C6 C8       start   ldab    #200            ; Dividend
+   6  2002   8D 01               bsr     divb10          ; Aufruf des Divisionsprogramms
+   7  2004   3F                  swi                     ; Programmende
+   8  2005               
+   9  2005               ;************************************************************************
+  10  2005               ;  DIVB10 zerstîrt F,A,B,X, Dividend in B, Quotient nach B, Rest nach A
+  11  2005               ;************************************************************************
+  12  2005               
+  13  2005   CE 00 08    divb10  ldx     #8              ; Schiebedivision fÅr 8 Bit
+  14  2008   4F                  clra                    ; higher Byte vom D-Akku lîschen
+  15  2009   05          div     asld                    ; ZÑhler 1 Bit nach links schieben
+  16  200A   81 0A               cmpa    #10             ; 10 enthalten?
+  17  200C   25 03               bcs     1$              ; nein...
+  18  200E   80 0A               suba    #10             ; ja: dann abziehen
+  19  2010   5C                  incb                    ;    und Quotientenbit setzen
+  20  2011   09          1$      dex                     ; alle Bits bearbeitet?
+  21  2012   26 F5               bne     div             ; nein...
+  22  2014   39                  rts
+  23  2015               
+  24  2015                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\DIVB10.HX2
+Elapsed time: 0.8 sec.

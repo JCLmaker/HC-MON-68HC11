@@ -1,0 +1,22 @@
+        .list
+        .file
+        .title  3.1.1. Testprogramm fÅr D/A-Wandler
+        .incl   miniproz
+        .incl   konstant
+
+start   ldx     #hallo          ; Programmstart melden
+        jsr     print
+1$      staa    da              ; Rampenwert ausgeben
+        inca                    ; steigende Rampe erzeugen
+        bra     1$
+
+
+;*********************************
+;  Textausgaben fÅr das Programm
+;*********************************
+
+hallo   .db     cr,lf
+        .asciz  "Rampentest am D/A-Wandler"
+
+        .end
+

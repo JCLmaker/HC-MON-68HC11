@@ -1,0 +1,44 @@
+        .list
+        .file
+        .title  2.3.2. Schiebemultiplikation
+
+mkant   .equ    $3000           ; 16 Bit Speicher
+mkator  .equ    $3002           ; 16 Bit Speicher
+prod    .equ    $3004           ; 32 Bit Ergebnisspeicher
+m1      .equ    132
+m2      .equ    379
+
+start   ldd     #m1             ; Zahl1
+        std     mkant
+        ldd     #m2             ; Zahl2
+        std     mkator
+        bsr     mul16s          ; Aufruf des Multiplikationsprogramms
+        swi                     ; Programmende
+
+;************************************************
+;  MUL16S zerstîrt F,A,X, PROD = MKANT * MKATOR
+;************************************************
+
+mul16s  ldd     #0
+        std     prod+2          ; Ergebnisspeicher (lower Wort) lîschen
+        ldx     #16             ; ZÑhler fÅr 16 Schiebeoperationen
+2$      asl     prod+3          ; Produkt
+        rol     prod+2          ; um ein Bit
+        rol     prod+1          ; nach links
+        rol     prod            ; schieben
+        asl     mkant+1
+        rol     mkant           ; hîchstes Bit gesetzt?
+        bcc     1$              ; nein
+        ldd     mkator
+        addd    prod+2
+        std     prod+2          ; öberlauf? 
+        bcc     1$              ; nein
+        inc     prod+1          ; öberlauf?
+        bne     1$              ; nein
+        inc     prod
+1$      dex                     ; alle 16 Bits bearbeitet?
+        bne     2$
+        rts
+
+        .end
+

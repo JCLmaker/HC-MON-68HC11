@@ -1,0 +1,167 @@
+ ***********************************************************************
+*                     ASMSHELL Version 1.1   1/91                       *
+*                    Entwickelt mit GFA-BASIC V3.5                      *
+ ***********************************************************************
+
+Autor:    Prof. Dr. Th. Schiller
+          Deutsche Bundespost Telekom, Fachhochschule Berlin
+          Ringbahnstraûe 130
+          D-1000 Berlin 42
+          Tel. +4930 758 4700
+
+Hinweis:  Die auf dieser Diskette enthaltenen Programme, Resourcen, Daten-
+          und Quellfiles dÅrfen nur nicht-kommerziell verwendet werden!
+          Verkauf untersagt. VerÑnderungen an allen Files (auûer MINIP1.MIC,
+          WORLD.MIC und den *.INF-Dateien) untersagt. Kopieren und Weiter-
+          gabe mit diesem README-File und mit Quellenangabe gestattet!
+
+          (c) 1990, 1991. Alle weiteren Rechte vorbehalten!
+
+          Keine Haftung fÅr SchÑden, die aus der Anwendung der Programme
+          oder Daten entstehen!
+
+                    ************************************
+                    Diese Disk sollte "gebootet" werden!
+                    ************************************
+
+
+
+
+1. Allgemeines
+##############
+
+        Das System besteht aus den Ordnern:
+
+                AUTO            <- enthÑlt modifiziertes EXEC_OS von PD338
+                ASM63           <- Inhalt siehe README.2_1 in diesem Ordner
+                PROMMER         <- hier leer, gedacht fÅr PROM-Programmer
+                TERMINAL        <- hier leer, gedacht fÅr Terminal-Programm
+
+        Im Auto-Ordner steht das fÅr dieses System modifizierte Programm
+        EXECOS.PRG (vielen Dank an Ralf Meister fÅr sein Programm EXEC_OS
+        von der PD338). Dieses Programm muû bei mehreren Programmen im
+        Auto-Ordner als  l e t z t e s  in den Ordner kopiert werden!
+
+        EXECOS installiert drei Pfade in das GEM-Environment (\TERMINAL
+        \PROMMER und \EDITOR). Dadurch kînnen GEM-Programme, die in diesen
+        Ordnern stehen, auch von einer anderen Directory aus gestartet
+        werden, ohne daû es zu Lade-Problemen mit den zugehîrigen Recource-
+        Files kommt. SETUP- und INF-Dateien von Programmen, die in diesen
+        Ordnern stehen, mÅssen aber trotzdem in die Startdirectory der
+        ASMSHELL kopiert werden!
+
+        Vorteil: Alle Programme bleiben Åbersichtlich in den entsprechenden
+                 Ordnern und mÅssen nicht unter dem gleichen Pfad wie ASMSHELL
+                 gespeichert werden!
+
+        Bei Verwendung von TOS 1.4 startet die ASMSHELL nach dem Booten
+        automatisch. Bei allen Programmen ist das FASTLOAD-Bit gesetzt. Alle
+        Programme und die meisten Dateien sind schreibgeschÅtzt! Vor dem
+        Lîschen muû das Fileattribut im Dektop unter DATEI, zeige Info... auf
+        lesen/schreiben gesetzt werden.
+
+
+
+2. ASMSHELL
+###########
+
+        Das Programm erleichtert die Arbeit mit dem Assembler ASM63. Es
+        kînnen alle Pfade fÅr die verschiedenen Hilfsprogramme, die fÅr eine
+        Programmentwicklung nîtig sind (EDITOR, ASSEMBLER, SIMULATOR,
+        DATENKONVERTER, TERMINALPROGRAMM, PROMMERPROGRAMM), und fÅr alle
+        Assemblerdateien eingestellt und in der Datei ASMSHELL.INF gespei-
+        chert werden.
+
+        Im MenÅpunkt OPTIONEN lassen sich einige Voreinstellungen fÅr die
+        öbergabe von Pfaden an den Editor und den Assembler, unabhÑngig von
+        den unter AUSWAHL eingestellten Pfaden, ein- bzw. ausschalten. Der
+        MenÅpunkt "Listing sofort drucken" Åbergibt an den Assembler den
+        Listingpfad "PRN:". Dadurch wird bei Verwendung des Pseudobefehls
+        .FILE (siehe README.2_1 im Ordner ASM63) kein Listfile erzeugt,
+        sondern die Listfile-Ausgabe unmittelbar zum Drucker umgelenkt. Eine
+        Umlautkonvertierung (siehe unten) findet dann aber  n i c h t  statt!
+
+        Es lassen sich ferner Druckerinitialisierungs-Codes und Umlaut-
+        codes vorgeben, die beim MenÅpunkt  "Datei drucken  ^D"  verwendet
+        werden. Die Umlautkonvertierung ermîglicht die Ausgabe von Atari-
+        codierten deutschen Texten auf jedem Drucker. Auf Wunsch wird am
+        Ende der Ausgabe ein Form-Feed zum Drucker gesendet. Dazu muû die
+        BlattlÑnge am Drucker richtig eingestellt sein!
+
+        Die Anzeige von Text-Dateien funktioniert genauso wie im Desktop!
+        (SPACE = 24 Zeilen weiter, CR = eine Zeile weiter, Ctrl/C = Abbruch)
+
+        Mit der Taste >F< (und dem MenÅpunkt "FEHLER.TXT anzeigen" kann die
+        Datei FEHLER.TXT mit allen Fehlercodes des Cross-Assemblers angezeigt
+        werden. Steuerung wie bei der Textanzeige im Dektop!
+
+        Das Starten der Programme kann durch MenÅauswahl oder durch Control-
+        Tasten ausgelîst werden. Die Pfade lassen sich durch ALTERNATE-
+        Kombinationen einstellen. Alle Shell-Programme kînnen durch ein-
+        fachen Tastendruck gestartet werden.
+
+        Weitere Hinweise sollten bei einem GEM-Programm eigentlich nicht
+        erforderlich sein!!!
+
+
+
+
+3. Anwendung
+############
+
+        ASMSHELL und ASM63 werden zur Ausbildung im Labor fÅr Mikrocomputer-
+        technik an der FH-Berlin der DBP-Telekom eingesetzt.
+
+        Der Assembler wird fÅr die Programmierung des Mikrocomputer-Boards
+        MINIPROZ (Grîûe 70x100 mm) verwendet. MINIPROZ enthÑlt 8k-Byte RAM,
+        8 bidirektionale I/O-Leitungen, eine serielle Schnittstelle mit
+        9600Bd, je einen 8 Bit A/D- und D/A-Wandler und kann extern noch
+        erweitert werden. Das Monitorprogramm (siehe MINIPROZ.MIC im Order
+        /ASM63/QUELLEN) ermîglicht ein relativ komfortables Arbeiten. öber-
+        setzte Assemblerprogramme kînnen als *.HX2-File (MOTOROLA-S-Format)
+        mit Hilfe eines entsprechenden Terminalprogramms in den MINIPROZ
+        geladen, dort gestartet und ausgetestet werden.
+
+        ASMSHELL arbeitet mit UNITERM, TEMPUS und JUNIORPROMMER problemlos
+        zusammen. Andere Terminalprogramme und Editoren mÅûten ebenfalls
+        funktionieren. Der Editor sollte aber den Aufruf von Dateien Åber
+        die Kommandozeile beherrschen!
+
+        Die History-Anzeige zeichnet u.a. den Return-Code aller gestarteten
+        Programme auf. Ein Returncode von 0 entspricht einem fehlerfreien
+        Programmlauf. Die Returncodes des Assemblers und des HEX/BIN-Konver-
+        ters werden zusÑtzlich in Alert-Boxen interpretiert, wenn diese
+        Option vorher mit "Returncode analysieren" eingeschaltet wurde.
+
+        Beim Aufruf des Assemblers kann es bei sehr langen Pfaden zu einer
+        der Fehlermeldung kommen, daû die Åbergebene Kommandozeile zu lang
+        ist. In diesem Fall sollte z.B. auf die öbergabe eines Listpfades
+        oder eines Outputpfades verzichtet werden (oder man verschachtelt
+        die Pfade nicht so tief!). Es empfiehlt sich daher das Arbeiten mit
+        einer RAM-Disk. Alle Ausgaben sollten dann hier hin geleitet werden.
+        Das ist erstens schneller und vermeidet zweitens in den meisten
+        FÑllen die hier angesprochene Fehlermeldung.
+
+
+
+
+4. Noch was?
+############
+
+        Sollten Fehler auftreten, so bitte ich um einen entsprechenden
+        Hinweis an die oben angegebene Adresse.
+
+        Wenn Sie einen Fehler entdecken sollten, einen Verbesserungsvor-
+        schlag machen mîchten oder die Programme nur als nÅtzlich empfinden,
+        so wÅrde ich mich Åber eine RÅckmeldung (kein Geld!) freuen, um
+        etwas Åber die Verbreitung dieses Programmsystems zu erfahren (60
+        Pfennig-Postkarte genÅgt)!
+
+
+
+Viel Spaû damit!
+Th. Schiller
+
+
+PS: Anleitung fÅr den Assembler: siehe das File README.2_1 im Ordner \ASM63.
+

@@ -1,0 +1,44 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   ADDIER1.MIC    03.01.1991    12:32:16    Page: 1
+2.2.1 Addition von Bytes
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  2.2.1 Addition von Bytes
+   4  2000               ;********************************************
+   5  2000               ;  24-Bit Addition
+   6  2000               ;********************************************
+   7  2000               
+   8  2000               zahl1   .equ    $3000           ; h”chstes Byte der Zahl1
+   9  2000               zahl2   .equ    $3010           ; h”chstes Byte der Zahl2
+  10  2000               summe   .equ    $3020           ; h”chstes Byte der Summe
+  11  2000               
+  12  2000   B6 30 02    start   ldaa    zahl1+2         ; beginne beim niederwertigsten
+  13  2003   BB 30 12            adda    zahl2+2         ; Byte
+  14  2006   B7 30 22            staa    summe+2         ; 1. Teilergebnis speichern
+  15  2009   B6 30 01            ldaa    zahl1+1         ; mittleres Byte bearbeiten
+  16  200C   B9 30 11            adca    zahl2+1         ; šbertrag mit addieren !
+  17  200F   B7 30 21            staa    summe+1         ; 2. Teilergebnis speichern
+  18  2012   B6 30 00            ldaa    zahl1           ; h”chstes Byte bearbeiten
+  19  2015   B9 30 10            adca    zahl2           ; šbertrag mit addieren !
+  20  2018   B7 30 20            staa    summe           ; 3. Teilergebnis speichern
+  21  201B   3F                  swi                     ; Programmende
+  22  201C               
+  23  201C                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\ADDIER1.HX2
+Elapsed time: 1 sec.

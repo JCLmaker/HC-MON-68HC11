@@ -1,0 +1,45 @@
+        .list
+        .file
+        .title  3.2.1. Sortier-Algorithmus 1 fr Bytes
+
+staad   .equ    $40             ; Startadresse fr Vergleich
+endad   .equ    $42             ; Endadresse fr Vergleich
+
+start   ldx     #area           ; Speicherbereich der Elemente
+        ldab    #23             ; Anzahl-1 bergeben
+        bsr     sort1           ; Aufruf des Sortierprogramms
+        swi
+
+; SORT1 fr ein Bytefeld mit maximal 255 Eintr„gen
+
+sort1   stx     staad   ; Anfangsadresse retten
+        abx
+        stx     endad   ; Endadresse retten
+again   ldx     staad   ; Anfangsadresse laden
+        ldaa    ,x      ; 1. Element laden
+check   cmpa    1,x     ; mit n„chsten Element vergleichen
+        bhi     1$      ; -> in richtiger Lage
+        ldab    1,x     ; Nachbarelement wird neues lokales Minimum
+        staa    1,x     ; alter Wert ist kein Minimum -> tauschen
+        tba             ; neues lokales Minimum retten
+1$      inx             ; n„chstes Element adressieren
+        cpx     endad   ; Ende eines Durchlaufs?
+        bne     check   ; nein...
+        ldx     staad   ; Anfangsadresse laden
+        staa    ,x      ; neues lokales Minimum speichern
+        inx             ; Liste wird um 1 kleiner
+        stx     staad   ; neue Anfangsadresse speichern
+        cpx     endad   ; alles sortiert?
+        bne     again   ; nein, noch nicht...
+        rts
+
+;*****************************
+;  Einige unsortierte Zahlen
+;*****************************
+
+area    .db     34,$e3,$1f,55,67,$ff,$fe,$71
+        .db     99,%1100101,$4f,$5f,$6f,$70,$71,$71
+        .db     %11101,2,9,3,8,%10101010,$ff,0
+
+         .end
+

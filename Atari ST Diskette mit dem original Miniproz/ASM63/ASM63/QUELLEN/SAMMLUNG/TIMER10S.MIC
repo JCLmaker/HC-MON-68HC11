@@ -1,0 +1,33 @@
+        .list
+        .file
+        .title  Programmgerst fr 10-Sekunden-Timer in Polling-Technik
+        .incl   miniproz
+        .incl   konstant
+
+tics    .equ    61440           ; 50ms Intervall bei f=1.2288 MHz
+help    .equ    $FF             ; Zero-Page-Hilfsspeicher
+
+start   ldaa    #200            ; 200 x 50ms =  Sekunden
+        staa    help
+loop    ldaa    tcsr            ; OCF-Bit l”schen
+        ldd     ocrh            ; letzten Vergleichswert laden
+        addd    #tics           ; und Intervall addieren
+        std     ocrh            ; Timer programmieren
+
+; Intervall z„hlen:
+
+        dec     help            ; 50ms-Intervall z„hlen, 10 Sekunden um?
+        bne     1$              ; nein...
+        ldaa    #200            ; ja, Z„hler auf Anfang stellen
+        staa    help
+        ldaa    #bell
+        jsr     terout          ; nach 10 Sekunden 1x klingeln lassen
+
+; warten auf Ablauf des Timers:
+
+1$      tim     #%01000000,tcsr ; OCF-Bit gesetzt?  (Timer abgelaufen?)
+        bne     loop            ; ja...
+        bra     1$              ; nein, dann warten...
+
+        .end
+

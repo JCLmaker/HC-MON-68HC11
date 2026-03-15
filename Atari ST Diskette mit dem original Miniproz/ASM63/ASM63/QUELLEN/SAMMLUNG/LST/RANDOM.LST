@@ -1,0 +1,65 @@
+
+
+
+
+
+
+
+
+
+
+6301 Cross-Assembler V2.1-A   RANDOM.MIC     03.01.1991    12:36:36    Page: 1
+5.3. Reproduzierbarer Zufallszahlen-Generator
+
+
+LINE#  LOC    CODE                              SOURCE
+
+
+   1  2000                       .list
+   2  2000                       .file
+   3  2000                       .title  5.3. Reproduzierbarer Zufallszahlen-Generator
+   4  2000                       .incl   miniproz
+   5  2000                       .incl   konstant
+   6  2000               
+   7  2000   5F          start   clrb                    ; Sequenz-ZÑhler lîschen
+   8  2001   86 FF               ldaa    #-1             ; Anfangswert fÅr den Zufallsgenerator
+   9  2003   BD F0 12            jsr     prcrlf          ; neue Zeile anfangen
+  10  2006   8D 15       2$      bsr     rand            ; Zufallswert erzeugen
+  11  2008   36                  psha                    ; Zufallswert retten
+  12  2009   BD F0 1B            jsr     outhex          ; Hex-Wert ausgeben
+  13  200C   BD F0 15            jsr     prspac          ; und einen Zwischenraum erzeugen
+  14  200F   5C                  incb                    ; Durchlauf zÑhlen
+  15  2010   C5 0F               bitb    #$F             ; schon 16 Werte in einer Zeile?
+  16  2012   26 03               bne     1$              ; nein...
+  17  2014   BD F0 12            jsr     prcrlf          ; neue Zeile anfangen
+  18  2017   32          1$      pula                    ; letzten Zufallswert wieder laden
+  19  2018   C1 D9               cmpb    #217            ; schon alle Werte erzeugt?
+  20  201A   26 EA               bne     2$              ; nein...
+  21  201C   3F                  swi                     ; ja, Programmende
+  22  201D               
+  23  201D               ;*************************************************************
+  24  201D               ;  RAND erzeugt eine Sequenz mit 217 Zufallswerten in Akku A
+  25  201D               ;
+  26  201D               ;  Parameter:  A = Startwert oder letzte Zufallszahl
+  27  201D               ;   RÅckgabe:  A = neue Zufallszahl
+  28  201D               ;  VerÑndert:  F,A
+  29  201D               ;  UP-Aufruf:
+  30  201D               
+  31  201D   3C          rand    pshx                    ; rette X-Register
+  32  201E   36                  psha                    ; rette letzten Zufallswert
+  33  201F   46                  rora
+  34  2020   46                  rora
+  35  2021   46                  rora
+  36  2022   30                  tsx                     ; SP zum Zugriff auf den Stack laden
+  37  2023   A8 00               eora    0,x             ; EXOR mit letzten Zufallswert erzeugen
+  38  2025   46                  rora                    ; im Carry ein Zufallsbit erzeugen
+  39  2026   32                  pula                    ; hole letzten Zufallswert zurÅck
+  40  2027   46                  rora                    ; bilde mit dem Carry eine neue Zufallszahl
+  41  2028   38                  pulx                    ; hole altes X-Register wieder zurÅck
+  42  2029   39                  rts 
+  43  202A               
+  44  202A                       .end
+
+Assembly successful, no errors detected.
+Output-filename I:\TPACKER\RANDOM.HX2
+Elapsed time: 4 sec.

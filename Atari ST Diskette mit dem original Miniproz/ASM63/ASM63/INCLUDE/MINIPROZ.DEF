@@ -1,0 +1,68 @@
+;****************************************************************
+;       Includefile fÅr MINIPROZ-Monitor
+;****************************************************************
+
+
+; MCU-REGISTER:
+
+p1ddr   .equ    0               ; PORT 1 DATA DIRECTION REGISTER
+p2ddr   .equ    1               ; PORT 2 DATA DIRECTION REGISTER
+p1dr    .equ    2               ; PORT 1 DATA REGISTER
+p2dr    .equ    3               ; PORT 2 DATA REGISTER & MODE REGISTER
+p4ddr   .equ    5               ; PORT 4 DATA DIRECTION REGISTER
+p4dr    .equ    7               ; PORT 4 DATA REGISTER
+tcsr    .equ    8               ; TIMER CONTROL/STATUSREGISTER
+timerh  .equ    9               ; TIMER (HIGH BYTE)
+timerl  .equ    $A              ; TIMER (LOW BYTE)
+ocrh    .equ    $B              ; OUTPUT COMPARE REGISTER (HIGH)
+ocrl    .equ    $C              ; OUTPUT COMPARE REGISTER (LOW)
+icrh    .equ    $D              ; INPUT CAPTURE REGISTER (HIGH)
+icrl    .equ    $E              ; INPUT CAPTURE REGISTER (LOW)
+rmcr    .equ    $10             ; RATE & MODE CONTROL REGISTER
+trcsr   .equ    $11             ; TRANSMIT/RECEIVE CONTROL/STATUSREGISTER
+rdr     .equ    $12             ; RECEIVE DATA REGISTER
+tdr     .equ    $13             ; TRANSMIT DATA REGISTER
+rcr     .equ    $14             ; RAM CONTROL REGISTER
+
+
+; PERIPHERIE
+
+AD      .EQU    $4000           ; A/D-Wandler
+DA      .EQU    $6000           ; D/A-Wandler
+EXTMEM  .EQU    $8000           ; Externes Memory (Expansion)
+
+
+; EINSPRUNGPUNKTE FUER INTERRUPTS:
+
+JSCI    .equ    $3fe8           ; SCI-IRQ2                      (MONITOR)
+JTOF    .equ    $3feb           ; TOF-IRQ2
+JOCF    .equ    $3fee           ; OCF-IRQ2
+JICF    .equ    $3ff1           ; ICF-IRQ2
+JIRQ1   .equ    $3ff4           ; IRQ1
+JSWI    .equ    $3ff7           ; SWI                           (MONITOR)
+JNMI    .equ    $3ffa           ; NMI
+JTRAP   .equ    $3ffd           ; TRAP-INTERRUPT                (MONITOR)
+
+
+; SYSTEM UNTERPROGRAMME:
+
+cold    .equ    $f000           ; Kaltstart Einsprung
+warm    .equ    $f003           ; Warmstart Einsprung
+terinp  .equ    $f006           ; lese ASCII-Zeichen vom Terminal nach Akku-A
+terout  .equ    $f009           ; sende ASCII-Zeichen zum Terminal aus Akku-A
+terio   .equ    $f00c           ; lese und sende ASCII-Zeichen
+print   .equ    $f00f           ; Ausgabe eines ASCII-Strings indiziert durch X
+prcrlf  .equ    $f012           ; Ausgabe von <CR> und <LF>
+prspac  .equ    $f015           ; Ausgabe eines <SPACE>
+inphex  .equ    $f018           ; Einlesen eines HEX-Zeichens in Akku-A
+outhex  .equ    $f01b           ; Ausgabe eines HEX-Zeichens aus Akku-A
+
+; Folgende Definitionen nur ab MINIPROZ V2.0:
+
+inpwor  .equ    $f01e           ; Einlesen einer 16-Bit Hex-Zahl ins X-Register
+outwor  .equ    $f021           ; Ausgabe einer 16-Bit Hex-Zahl aus X-Register
+qinput  .equ    $f024           ; RX/TX-Status in Akku-A laden (Bit 5-7)
+dasmxb  .equ    $f027           ; CodelÑnge des nÑchsten Befehls berechnen (X)->B
+enamon  .equ    $f02a           ; Ctrl/C + Ctrl/T einschalten
+dismon  .equ    $f02d           ; Ctrl/C + Ctrl/T sperren
+

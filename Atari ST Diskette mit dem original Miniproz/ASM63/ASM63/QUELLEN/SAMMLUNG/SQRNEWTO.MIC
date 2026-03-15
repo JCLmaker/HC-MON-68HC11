@@ -1,0 +1,81 @@
+        .list
+        .file
+        .title  2.5.2. Newton-Verfahren Wurzelziehen: SQR(Akku-D)
+
+divid   .equ    $40
+divis   .equ    $42
+loop    .equ    $44
+
+start   ldd     #20203          ; Radikand
+        bsr     sqrtn           ; Aufruf des Wurzelprogramms
+        ldaa    loop            ; B=Wurzel, A=Anzahl der Loops
+        swi                     ; Programmende
+
+;**************************************
+;  SQRTN zerstîrt F,A,B,X, A = SQR(D)
+;
+;  ZunÑchst SchÑtzwert ermitteln:
+
+sqrtn   clr     loop            ; SchleifenzÑhler lîschen
+        xgdx                    ; Radikand
+        pshx                    ; im Stack retten
+        xgdx
+        ldx     #15             ; ZÑhler laden
+2$      dex                     ; bis zum letzten Bit getestet?
+        beq     1$              ; ja...
+        asld                    ; hîchstes Bit im Carry?
+        bcc     2$              ; nein...
+        dex
+1$      xgdx                    ; Ausrechnen des
+        tba                     ; Startwertes -> (0...14)
+        mul                     ; Quadrieren -> (0...196)
+        incb                    ; Startwert fÅr Newton-Verfahren
+
+; Newton-Verfahren: yn+1 = (x/yn + yn) / 2
+
+newton  inc     loop            ; zÑhle die SchleifendurchlÑufe
+        pulx                    ; Radikanten holen
+        stx     divid           ; speichern fÅr DIV16-Routine
+        pshx                    ; und wieder retten
+        pshb                    ; Wurzel-SchÑtzwert yn retten
+        clra                    ; higher Byte lîschen
+        std     divis           ; speichern fÅr DIV16-Routine
+        bsr     div16           ; x/yn berechnen
+        pulb                    ; yn holen
+        clra                    ; higher Byte lîschen
+        pshb                    ; und wieder retten
+        addd    divid           ; x/yn + yn berechnen
+        lsrd                    ; und durch 2 teilen ergibt yn+1
+        pula                    ; yn holen
+        sba                     ; Unterschied feststellen:
+        bpl     1$
+        nega                    ; Absolutwert bilden!
+1$      cmpa    #1              ; Unterschied > 1?
+        bhi     newton          ; ja...
+        pulx                    ; Stack sÑubern
+        rts
+
+
+;******************************************
+;  16-Bit Division: DIVID = DIVID / DIVIS
+;******************************************
+
+div16   ldx     #16             ; Schiebedivision fÅr 16 Bit
+        clrb
+        clra
+1$      asl     divid+1         ; 0-Ergebnisbit setzen
+        rol     divid
+        rolb
+        rola
+        subd    divis           ; Divisor enthalten?
+        bcc     3$              ; ja...
+        addd    divis           ; nein, Originalwert wieder herstellen
+        bra     2$
+
+3$      inc     divid+1         ; 1-Ergebnisbit setzen
+2$      dex                     ; alle Bits bearbeitet?
+        bne     1$              ; nein...
+        rts
+
+        .end
+

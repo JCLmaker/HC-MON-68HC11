@@ -1,0 +1,44 @@
+        .list
+        .file
+        .title  2.5.2. Approximations-Verfahren Wurzelziehen: SQR(Akku-D)
+
+start   ldd     #20203          ; Radikand
+        bsr     sqrt            ; Aufruf des Wurzelprogramms
+        swi                     ; Programmende
+
+;*************************************
+;  SQRT zerst”rt F,A,B,X, A = SQR(D)
+;*************************************
+
+sqrt    xgdx
+        pshx                    ; Radikand im Stack speichern
+        ldaa    #$80            ; erstes Testbit setzen
+        psha                    ; Wurzelspeicher
+        psha                    ; Testbitspeicher
+        tsx                     ; Zeiger auf Stackadressen laden
+1$      tab
+        mul                     ; Quadrat bilden
+        subd    2,x             ; Radikand gr”er?
+        bls     2$              ; ja...
+        ldaa    1,x             ; Wurzel laden
+        suba    ,x              ; Testbit l”schen
+        bra     3$
+
+2$      ldaa    1,x             ; Wurzel laden
+3$      ldab    ,x              ; Testbit laden
+        lsrb                    ; und n„chst kleineres Bit setzen
+        bcs     ende            ; alle Bits bearbeitet...
+        stab    ,x              ; Testbit speichern
+        aba
+        staa    1,x             ; neue Wurzel speichern
+        bra     1$
+
+; Das Ergebnis steht bereits im Akku A
+
+ende    ins                     ; Testbit vom Stack entfernen
+        ins                     ; Wurzel vom Stack entfernen
+        pulx                    ; Radikand zurckladen
+        rts
+
+        .end
+
