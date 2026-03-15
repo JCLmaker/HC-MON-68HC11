@@ -1,0 +1,3862 @@
+  Sun Mar 15 2026 13:59                                                                                                  Page    1
+
+
+
+
+
+
+
+               2500 A.D. 68c11 Macro Assembler  -  Version 4.01a
+               -------------------------------------------------
+
+                       Input  Filename : hcmon.asm
+                       Output Filename : hcmon.obj
+
+
+    1                          	;************************************************************
+    2                          	;	BETRIEBSSYSTEM FUER MOTOROLA 68HC11	V1.1
+    3                          	;	MIT DISASSEMBLER
+    4                          	;
+    5                          	;	JOERG CLAASSEN  21.04.1991   DUBLIN
+    6                          	;************************************************************
+    7                          	
+    8                          	; SYSTEM UND ASSEMBLER KONSTANTEN
+    9                          	
+   10          0003            	CTRLC:	EQU	3	;ABBRUCHZEICHEN
+   11          0011            	CTRLQ:	EQU	$11	;AUSGABE WEITERLAUFEN LASSEN
+   12          0013            	CTRLS:	EQU	$13	;AUSGABE ANHALTEN
+   13          0014            	CTRLT:	EQU	$14	;REGISTERANZEIGE IM USER-MODE
+   14          0020            	SPACE:	EQU	$20	;ZWISCHENRAUM
+   15          0008            	BS:	EQU	$8	;RUECKSCHRITT
+   16          000D            	CR:	EQU	$D	;WAGENRUECKLAUF
+   17          000A            	LF:	EQU	$A	;ZEILENTRANSPORT
+   18          007F            	DELETE:	EQU	$7F	;LOESCH-ZEICHEN
+   19          007E            	JMP:	EQU	$7E	;OPCODE FUER JMP-BEFEHL
+   20          003F            	SWI:	EQU	$3F	;OPCODE FUER SOFTWARE-INTERRUPT (BREAKPOINT)
+   21          0036            	SINGLE:	EQU	54	;TAKTZYKLEN BIS ZUM SINGLE-STEP-IRQ
+   22          00BD            	EQUAL:	EQU	$80+'='
+   23          6000            	RAMSTA:	EQU	$6000
+   24                          	
+   25                          	;MCU-REGISTER:
+   26                          	
+   27   0000                   		INCLUDE	MAP_HC11.INS	;DEFINITIONS LADEN
+   28          0000            	HC_RAM		EQU	0		; ON-CHIP-RAM, 256 BYTE
+   29          1000            	HC_REGS 	EQU	$1000		; 64 BYTE REGISTERBLOCK
+   30          B600            	HC_EEPROM	EQU	$B600		; ON-CHIP-EEPROM
+   31          BF40            	HC_BOOTER	EQU	$BF40		; BOOT-ROM
+   32          E000            	HC_ROM		EQU	$E000		; 8K-ROM
+   33                          	
+   34                          	; 64 - BYTE REGISTERBLOCK
+   35                          	
+   36          1000            	PORTA		EQU	$1000
+   37          1002            	PIOC		EQU	$1002
+   38          1003            	PORTC		EQU	$1003
+   39          1004            	PORTB		EQU	$1004
+   40          1005            	PORTCL		EQU	$1005
+   41          1007            	DDRC		EQU	$1007
+   42          1008            	PORTD		EQU	$1008
+   43          1009            	DDRD		EQU	$1009
+   44          100A            	PORTE		EQU	$100A
+   45          100B            	CFORC		EQU	$100B
+   46          100C            	OC1M		EQU	$100C
+   47          100D            	OC1D		EQU	$100D
+  Sun Mar 15 2026 13:59                                                                                                  Page    2
+
+
+
+
+   48          100E            	TCNT		EQU	$100E		      ; UND $100F
+   49          1010            	TIC1		EQU	$1010		      ; UND $1011
+   50          1012            	TIC2		EQU	$1012		      ; UND $1013
+   51          1014            	TIC3		EQU	$1014		      ; UND $1015
+   52          1016            	TOC1		EQU	$1016		      ; UND $1017
+   53          1018            	TOC2		EQU	$1018		      ; UND $1019
+   54          101A            	TOC3		EQU	$101A		      ; UND $101B
+   55          101C            	TOC4		EQU	$101C		      ; UND $101D
+   56          101E            	TOC5		EQU	$101E		      ; UND $101F
+   57          1020            	TCTL1		EQU	$1020
+   58          1021            	TCTL2		EQU	$1021
+   59          1022            	TMSK1		EQU	$1022
+   60          1023            	TFLG1		EQU	$1023
+   61          1024            	TMSK2		EQU	$1024
+   62          1025            	TFLG2		EQU	$1025
+   63          1026            	PACTL		EQU	$1026
+   64          1027            	PACNT		EQU	$1027
+   65          1028            	SPCR		EQU	$1028
+   66          1029            	SPSR		EQU	$1029
+   67          102A            	SPDR		EQU	$102A
+   68          102B            	BAUD		EQU	$102B
+   69          102C            	SCCR1		EQU	$102C
+   70          102D            	SCCR2		EQU	$102D
+   71          102E            	SCSR		EQU	$102E
+   72          102F            	SCDR		EQU	$102F
+   73          1030            	ADCTL		EQU	$1030
+   74          1031            	ADR1		EQU	$1031
+   75          1032            	ADR2		EQU	$1032
+   76          1033            	ADR3		EQU	$1033
+   77          1034            	ADR4		EQU	$1034
+   78          1039            	OPTION		EQU	$1039
+   79          103A            	COPRST		EQU	$103A
+   80          103B            	PPROG		EQU	$103B
+   81          103C            	HPRIO		EQU	$103C
+   82          103D            	INIT		EQU	$103D
+   83          103E            	TEST1		EQU	$103E
+   84          103F            	CONFIG		EQU	$103F
+   85                          	
+   86                          	
+   87                          	
+   88                          	
+   89                          	
+   90   0000                   		ORG	0
+   91   0000   36 38 48 43 31  		DB	'68HC11-MONITOR'
+        0005   31 2D 4D 4F 4E 
+        000A   49 54 4F 52 
+   92                          	
+   93                          	;USER CPU-REGISTER
+   94                          	
+   95   9F00                   		ORG	$9F00	;RAMBEREICH VON $6000-$9FFF
+   96                          	
+   97   9F00                   	F:	DS	1	; PROCESSOR STATUSREGISTER		(USER)
+   98   9F01                   	A:	DS	1	; AKKU A				(USER)
+   99   9F02                   	B:	DS	1	; AKKU B				(USER)
+  100   9F03                   	XH:	DS	1	; X-REGISTER HIGH			(USER)
+  101   9F04                   	XL:	DS	1	; X-REGISTER LOW			(USER)
+  102   9F05                   	YH:	DS	1	; Y-REGISTER HIGH			(USER)
+  Sun Mar 15 2026 13:59                                                                                                  Page    3
+
+
+
+
+  103   9F06                   	YL:	DS	1	; Y-REGISTER LOW			(USER)
+  104   9F07                   	PCH:	DS	1	; PROGRAM COUNTER HIGH			(USER)
+  105   9F08                   	PCL:	DS	1	; PROGRAM COUNTER LOW			(USER)
+  106   9F09                   	SPH:	DS	1	; STACKPOINTER HIGH			(USER)
+  107   9F0A                   	SPL:	DS	1	; STACKPOINTER LOW			(USER)
+  108                          	
+  109                          	
+  110                          	;VARIABLEN DES DISASSEMBLERS
+  111                          	
+  112   9F0B                   	ENDAD:	DS	2
+  113   9F0D                   	STARTAD:
+  114   9F0D                   		DS	2
+  115   9F0F                   	ZAEHLER:
+  116   9F0F                   		DS	1
+  117   9F10                   	ZWAD3:	DS	2
+  118   9F12                   	REL_BYH:
+  119   9F12                   		DS	1
+  120   9F13                   	REL_BYL:
+  121   9F13                   		DS	1
+  122   9F14                   	MAGIC:	DS	2	;MAGICBYTE FUER RESET
+  123   9F16                   	MAGICADDR:
+  124   9F16                   		DS	2	;MAGIC-ADRESSE
+  125                          	
+  126                          	
+  127                          	; VARIABLEN DES MINIPROZ-MONITORS
+  128                          	
+  129   9F18                   	AUTOBK:	DS	2	;AUTO-BREAKPOINT-ADRESSE BEI TRACE
+  130   9F1A                   	AUTOOP:	DS	1	;ALTER USER-OPCODE AN AUTO-BREAKPOINT-ADRESSE
+  131   9F1B                   	IOWH:	DS	1	;HILFSZELLE ZUR EINGABE/AUSGABE
+  132   9F1C                   	IOWL:	DS	1	; EINES 16 BIT WERTES
+  133   9F1D                   	XHI:	DS	1	;HILFSZELLE 1 FUER
+  134   9F1E                   	XLO:	DS	1	; 16 BIT OPERATIONEN
+  135   9F1F                   	YHI:	DS	1	;HILFSZELLE 2 FUER
+  136   9F20                   	YLO:	DS	1	; 16 BIT OPERATIONEN
+  137   9F21                   	ZHI:	DS	1	;HILFSZELLE 3 FUER
+  138   9F22                   	ZLO:	DS	1	; 16 BIT OPERATIONEN
+  139   9F23                   	SCRATW:	DS	2	;16 BIT ZWISCHENSPEICHER
+  140   9F25                   	RXDATA:	DS	1	;DB-ZEICHEN VON SCI
+  141   9F26                   	CKSUM:	DS	1	;PRUEFSUMME
+  142   9F27                   	BYTECT:	DS	1	;BYTE ZAEHLER
+  143   9F28                   	SYSFLG:	DS	1	;SYSTEMFLAGS
+  144                          	
+  145                          	;	BIT #	BEDEUTUNG BEI BIT = 1
+  146                          	;	-------------------------------------------------------------
+  147                          	;	0	USER-MODE
+  148                          	;	1	TRACE-MODE
+  149                          	;	2	CTRL/C EINGABE BEI TRACE / 16-BIT REGISTER ADRESSIERT
+  150                          	;	3	ORFE (VON SCI)
+  151                          	;	4	SINGLE STEP
+  152                          	;	5	RDRF (VON SCI)
+  153                          	;	6	CTRL/C + CTRL/T SPERRE
+  154                          	;	7	AUTO-BREAKPOINT BEI TRACE: SUBROUTINE
+  155                          	
+  156                          	; STACK DES HCMON
+  157                          	
+  158   9F29                   		DS	79	;RAUM FUER UNTERPROGRAMMEBENEN
+  159   9F78                   	STACK:	DS	1
+  Sun Mar 15 2026 13:59                                                                                                  Page    4
+
+
+
+
+  160                          	
+  161                          	;EINSPRUNGPUNKTE FUER INTERRUPTS (PLATZ FUER BEFEHL: "JMP ADR")
+  162                          	
+  163   9F79                   	JSCI:	DS	3	;SCI SERIAL SYSTEM		(MONITOR)
+  164   9F7C                   	JSPI:	DS	3	;SPI SERIAL TRANSFER COMPLETE
+  165   9F7F                   	JPAIE:	DS	3	;PULSE ACCUMULATOR INPUT EDGE
+  166   9F82                   	JPAO:	DS	3	;PULSE ACCUMULATOR OVERFLOW
+  167   9F85                   	JTOF:	DS	3	;TIMER OVERFLOW
+  168   9F88                   	JTOC5:	DS	3	;TIMER OUTPUT COMPARE 5
+  169   9F8B                   	JTOC4:	DS	3	;TIMER OUTPUT COMPARE 4
+  170   9F8E                   	JTOC3:	DS	3	;TIMER OUTPUT COMPARE 3
+  171   9F91                   	JTOC2:	DS	3	;TIMER OUTPUT COMPARE 2
+  172   9F94                   	JTOC1:	DS	3	;TIMER OUTPUT COMPARE 1
+  173   9F97                   	JTIC3:	DS	3	;TIMER INPUT CAPTURE 3
+  174   9F9A                   	JTIC2:	DS	3	;TIMER INPUT CAPTURE 2
+  175   9F9D                   	JTIC1:	DS	3	;TIMER INPUT CAPTURE 1
+  176   9FA0                   	JRTI:	DS	3	;REAL TIME INTERRUPT
+  177   9FA3                   	JIRQ:	DS	3	;/IRQ
+  178   9FA6                   	JXIRQ:	DS	3	;/XIRQ
+  179   9FA9                   	JSWI:	DS	3	;SWI				(MONITOR)
+  180   9FAC                   	JTRAP:	DS	3	;TRAP-INTERRUPT			(MONITOR)
+  181                          	
+  182                          	;************************************************************
+  183                          	;	SYSTEM UNTERPROGRAMM SPRUNGTABELLE
+  184                          	;************************************************************
+  185                          	
+  186   E000                   		ORG	 $E000
+  187                          	
+  188   E000   7E E0 33        	COLD:	JMP	START	;KALTSTART EINSPRUNG
+  189   E003   7E E1 32        	WARM:	JMP	CONTRL	;WARMSTART EINSPRUNG
+  190   E006   7E E5 F8        	TERINP:	JMP	READ	;LESE DB-ZEICHEN VOM TERMINAL NACH AKKU A
+  191   E009   7E E6 11        	TEROUT:	JMP	WRITE	;SENDE DB-ZEICHEN ZUM TERMINAL AUS AKKU A
+  192   E00C   7E E6 3D        	TERIO:	JMP	ECHO	;LESE UND SENDE DB ZEICHEN
+  193   E00F   7E E6 74        	PRINT:	JMP	OUTSTR	;AUSGABE EINES DB STRINGS INDIZIERT DURCH X
+  194   E012   7E E6 57        	PRCRLF:	JMP	OUTCL	;AUSGABE VON <CR> UND <LF>
+  195   E015   7E E6 4D        	PRSPAC:	JMP	OUTS	;AUSGABE EINES <SPACE>
+  196   E018   7E E6 C3        	INPHEX:	JMP	INP2HA	;EINLESEN EINES HEX-ZEICENS IN AKKU A
+  197   E01B   7E E6 8E        	OUTHEX:	JMP	OUT2HA	;AUSGABE EINES HEX-ZEICHENS AUS AKKU A
+  198   E01E   7E E6 DE        	INPWOR:	JMP	INP4HX	;EINLESEN EINER 16-BIT HEX-ZAHL IN X-REG
+  199   E021   7E E6 83        	OUTWOR:	JMP	OUTX	;AUSGABE EINER 16-BIT HEX-ZAHL AUS X-REG
+  200   E024   7E E5 E7        	QINPUT:	JMP	STATUS	;RX/TX-STATUS IN BIT 5-7
+  201   E027   7E E8 C8        	DASMXB:	JMP	DISASM	;CODELAENGE DES NACHSTEN BEFEHLS BERECHNEN (X)->B
+  202   E02A   7E E9 79        	DISMON:	JMP	CTRCON	;CTRL/C + CTRL/T EINSCHALTEN
+  203   E02D   7E E9 89        	ENAMON:	JMP	CTRCOF	;CTRL/C + CTRL/T SPERREN
+  204   E030   7E E9 99        	NOCOP:	JMP	NORES	;WATCHDOC ZURUECKSETZEN
+  205                          	
+  206                          	
+  207                          	;************************************************************
+  208                          	;	KALTSTARTPUNKT NACH RESET
+  209                          	;************************************************************
+  210                          	
+  211   E033   0F              	START:	SEI
+  212   E034   FC 9F 14        		LDD	MAGIC		;ETWA EIN RESETFESTES PROGRAMM INSTALLIERT?
+  213   E037   1A 83 4A 43     		CPD	#'JC'
+  214   E03B   26 05           		BNE	NOMAGIC		;DOCH NICHT!
+  215   E03D   FE 9F 16        		LDX	MAGICADDR
+  216   E040   6E 00           		JMP	,X		;SPRUNG IN DIE RESETFESTE ROUTINE
+  Sun Mar 15 2026 13:59                                                                                                  Page    5
+
+
+
+
+  217   E042                   	NOMAGIC:
+  218   E042   8E 9F 78        		LDS	#STACK
+  219   E045   B6 10 39        		LDAA	OPTION		;MAXIMALE COP-ZEIT EINSTELLEN
+  220   E048   8A 0B           		ORAA	#%00001011	;COP AUF MAXIMALE ZEIT EINSTELLEN
+  221   E04A   B7 10 39        		STAA	OPTION
+  222   E04D   86 00           		LDAA	#%00000000
+  223   E04F   B7 10 2C        		STAA	SCCR1		;SERIAL COMMUNICATION CONTROL REGISTER 1
+  224   E052   86 2C           		LDAA	#%00101100
+  225   E054   B7 10 2D        		STAA	SCCR2		;SERIAL COMMUNICATION CONTROL REGISTER 2
+  226   E057   86 30           		LDAA	#%00110000
+  227   E059   B7 10 2B        		STAA	BAUD		;BAUD RATE REGISTER, 9600 BAUD
+  228   E05C   CE 9F 08        		LDX	#PCL
+  229   E05F   FF 9F 09        		STX	SPH		;VOREINSTELLUNG EINES USER-STACKS
+  230   E062   09              		DEX			;ZEIGE AUF USER-PCH
+  231   E063   CC 60 00        		LDD	#$6000		;STANDADRD-STARTADRESSE
+  232   E066   ED 00           		STD	,X		;     IN USER-PC SCHREIBEN
+  233   E068   7F 9F 00        		CLR	F		;USER-F-REG LOESCHEN
+  234   E06B   7F 9F 28        		CLR	SYSFLG
+  235   E06E   86 7E           		LDAA	#JMP		;VOREINSTELLUNG
+  236   E070   B7 9F 79        		STAA	JSCI		;	 DER
+  237   E073   B7 9F A9        		STAA	JSWI		;	 EINSPRUNG-
+  238   E076   B7 9F AC        		STAA	JTRAP		;	  PUNKTE
+  239                          	
+  240   E079   B7 9F 7C        		STAA	JSPI
+  241   E07C   B7 9F 7F        		STAA	JPAIE
+  242   E07F   B7 9F 82        		STAA	JPAO
+  243   E082   B7 9F 85        		STAA	JTOF
+  244   E085   B7 9F 88        		STAA	JTOC5
+  245   E088   B7 9F 8B        		STAA	JTOC4
+  246   E08B   B7 9F 8E        		STAA	JTOC3
+  247   E08E   B7 9F 91        		STAA	JTOC2
+  248   E091   B7 9F 94        		STAA	JTOC1
+  249   E094   B7 9F 97        		STAA	JTIC3
+  250   E097   B7 9F 9A        		STAA	JTIC2
+  251   E09A   B7 9F 9D        		STAA	JTIC1
+  252   E09D   B7 9F A0        		STAA	JRTI
+  253   E0A0   B7 9F A3        		STAA	JIRQ
+  254   E0A3   B7 9F A6        		STAA	JXIRQ
+  255                          	
+  256   E0A6   CE E1 B1        		LDX	#ABORT
+  257   E0A9   FF 9F 7A        		STX	JSCI+1		;FUER
+  258   E0AC   CE E3 E2        		LDX	#BREAK		;SCI UND
+  259   E0AF   FF 9F AA        		STX	JSWI+1		;SWI INTERRUPTS,
+  260   E0B2   CE E1 9C        		LDX	#OPCERR		;SOWIE BEI
+  261   E0B5   FF 9F AD        		STX	JTRAP+1		;OPCODE-ERROR
+  262                          	
+  263   E0B8   CE E9 A6        		LDX	#UNIRQ		;ALLE ANDEREN IRQ'S
+  264   E0BB   FF 9F 7D        		STX	JSPI+1		;WERDEN DEFAULT
+  265   E0BE   FF 9F 80        		STX	JPAIE+1		;AUF UNDEFINED IRQ UMGELENKT
+  266   E0C1   FF 9F 83        		STX	JPAO+1
+  267   E0C4   FF 9F 86        		STX	JTOF+1
+  268   E0C7   FF 9F 89        		STX	JTOC5+1
+  269   E0CA   FF 9F 8C        		STX	JTOC4+1
+  270   E0CD   FF 9F 8F        		STX	JTOC3+1
+  271   E0D0   FF 9F 92        		STX	JTOC2+1
+  272   E0D3   FF 9F 95        		STX	JTOC1+1
+  273   E0D6   FF 9F 98        		STX	JTIC3+1
+  Sun Mar 15 2026 13:59                                                                                                  Page    6
+
+
+
+
+  274   E0D9   FF 9F 9B        		STX	JTIC2+1
+  275   E0DC   FF 9F 9E        		STX	JTIC1+1
+  276   E0DF   FF 9F A1        		STX	JRTI+1
+  277   E0E2   FF 9F A4        		STX	JIRQ+1
+  278   E0E5   FF 9F A7        		STX	JXIRQ+1
+  279                          	
+  280                          	;MEMORY UEBERPRUEFEN OHNE RAM-INHALT ZU ZERSTOEREN !
+  281                          	
+  282   E0E8   CE EB AE        		LDX	#SELFT		;MELDUNG AUSGEBEN, DASS
+  283   E0EB   BD E6 74        		JSR	OUTSTR		;SELBSTTEST LAEUFT
+  284   E0EE   CE 5F FF        		LDX	#RAMSTA-1	;ANFANGSADRESSE DES RAMTESTS
+  285   E0F1   08              	RAMLOP:	INX
+  286   E0F2   A6 00           		LDAA	,X
+  287   E0F4   43              		COMA			;KOMPLEMENT BILDEN
+  288   E0F5   63 00           		COM	,X
+  289   E0F7   A1 00           		CMPA	,X		;FEHLER ?
+  290   E0F9   26 09           		BNE	RAMERR
+  291   E0FB   63 00           		COM	,X		;ORIGINALPATTERN HERSTELLEN
+  292   E0FD   43              		COMA
+  293   E0FE   A1 00           		CMPA	,X		;FEHLER ?
+  294   E100   26 02           		BNE	RAMERR
+  295   E102   20 ED           		BRA	RAMLOP		;NEIN, WEITER IM TEST
+  296                          	
+  297   E104   09              	RAMERR:	DEX			;LETZTE FUNKTIONSFAEHIGE RAM-ZELLE
+  298   E105   FF 9F 1B        		STX	IOWH		;RETTE ENDADRESSE
+  299   E108   0E              		CLI			;INTERRUPTS FREIGEBEN
+  300   E109   CE EB C4        		LDX	#RAMMS1
+  301   E10C   BD E6 74        		JSR	OUTSTR		;GEBE RAM-MESSAGE AUS
+  302   E10F   FE 9F 1B        		LDX	IOWH
+  303   E112   3C              		PSHX
+  304   E113   CE 60 00        		LDX	#RAMSTA
+  305   E116   BD E6 83        		JSR	OUTX		;ANFANG DES RAM-BEREICHS AUSGEBEN
+  306   E119   38              		PULX
+  307   E11A   FF 9F 1B        		STX	IOWH
+  308   E11D   CE EB D8        		LDX	#TOMSG
+  309   E120   BD E6 74        		JSR	OUTSTR
+  310   E123   CE 9F 1B        		LDX	#IOWH		;GEBE LETZTE RAM-ADRESSE AUS
+  311   E126   BD E6 89        		JSR	OUT4H		;WORT AUSGEBEN
+  312   E129   BD E6 57        		JSR	OUTCL		;<CR><LF>
+  313                          	
+  314                          	;****************************************************************
+  315                          	;	WARMSTART DES MONITORPROGRAMMS
+  316                          	;****************************************************************
+  317                          	
+  318                          	
+  319                          	;KOMMANDOSCHLEIFE
+  320                          	
+  321   E12C   CE EB DF        	HELP:	LDX	#HLPTXT		;KOMMANDOUEBERSICHT AUSGEBEN
+  322   E12F   BD E6 74        		JSR	OUTSTR
+  323   E132   8E 9F 78        	CONTRL:	LDS	#STACK		;MONITORSTACK SETZEN
+  324   E135   0E              		CLI			;INTERRUPTS FREIGEBEN
+  325   E136   7F 9F 28        		CLR	SYSFLG		;SYSTEMFLAGS INITIALISIEREN
+  326   E139   CE EE 7D        		LDX	#PROMPT 	;MONITORPROMPT AUSGEBEN
+  327   E13C   BD E6 74        		JSR	OUTSTR
+  328   E13F   BD E6 3D        		JSR	ECHO		;DB-ZEICHEN LESEN
+  329   E142   CE FA 53        		LDX	#COMTAB 	;START DER BEFEHLSTABELLE
+  330   E145   5F              		CLRB
+  Sun Mar 15 2026 13:59                                                                                                  Page    7
+
+
+
+
+  331   E146   A1 00           	SEACOM:	CMPA	,X		;ZEICHEN GEFUNDEN ?
+  332   E148   27 08           		BEQ	FOUND
+  333   E14A   08              		INX
+  334   E14B   5C              		INCB
+  335   E14C   C1 0A           		CMPB	#COMVEK-COMTAB	;LAENGE DER BEFEHLSTABELLE
+  336   E14E   27 E2           		BEQ	CONTRL		;EINGABE NICHT GEFUNDEN
+  337   E150   20 F4           		BRA	SEACOM
+  338                          	
+  339   E152   58              	FOUND:	ASLB			;WORTOFFSET ERZEUGEN
+  340   E153   CE FA 5D        		LDX	#COMVEK		;TABELLENSTART LADEN,
+  341   E156   3A              		ABX			;	OFFSET ADDIEREN
+  342   E157   EE 00           		LDX	,X		;	UND SPRUNGADRESSE LADEN
+  343   E159   AD 00           		JSR	,X		;KOMMANDO AUSFUEHREN
+  344   E15B   20 D5           		BRA	CONTRL
+  345                          	
+  346                          	
+  347                          	;****************************************************************
+  348                          	;	INTERRUPT PROGRAMME FUER TIMER, TRAP UND SCI-IRQ
+  349                          	;****************************************************************
+  350                          	
+  351                          	
+  352                          	;----------------------------------------------------------------
+  353                          	; TIMER OCF-INTERRUPT: TRACE-TIMER ODER USER-TIMER
+  354                          	;----------------------------------------------------------------
+  355                          	
+  356   E15D   B6 9F 28        	TIMER:	LDAA	SYSFLG
+  357   E160   85 01           		BITA	#%00000001		;USER-MODE ?
+  358   E162   27 04           		BEQ	TUSER			;???????  NEIN: USER INTERRUPT!
+  359   E164   85 12           		BITA	#%00010010		;SINGLE STEP ODER TRACE-MODE ?
+  360   E166   26 03           		BNE	TMINIP			;JA
+  361   E168   7E 9F 88        	TUSER:	JMP	JTOC5			;NEIN: USER INTERRUPT!
+  362                          	
+  363   E16B   86 08           	TMINIP:	LDAA	#%00001000		;INTERRUPT-FLAG LOESCHEN
+  364   E16D   B7 10 23        		STAA	TFLG1
+  365   E170   B6 10 22        		LDAA	TMSK1			;OCF-INTERRUPT SPERREN
+  366   E173   84 F7           		ANDA	#%11110111
+  367   E175   B7 10 22        		STAA	TMSK1
+  368   E178   30              		TSX				;X ZEIGT AUF USER-F
+  369   E179   8F              		XGDX
+  370   E17A   C3 00 08        		ADDD	#8			;TATSAECHLICHER USER-SP
+  371   E17D   FD 9F 09        		STD	SPH
+  372   E180   8E 9F 78        		LDS	#STACK			;EIGENEN STACK VERWENDEN
+  373   E183   0E              		CLI				;INTERRUPT WIEDER FREIGEBEN
+  374   E184   B6 9F 28        		LDAA	SYSFLG
+  375   E187   85 02           		BITA	#%00000010		;TRACE-MODE ?
+  376   E189   27 0E           		BEQ	TENDE			;NEIN: ABBRUCH
+  377   E18B   85 04           		BITA	#%00000100		;CTRL/C-EINGABE?
+  378   E18D   27 03           		BEQ	NOCTRC			;NEIN: TRACE LAEUFT WEITER...
+  379   E18F   7E E2 2E        		JMP	CTRLCA			;CTRL/C-ABBRUCHMELDUNG AUSGEBEN
+  380                          	
+  381   E192   FE 9F 09        	NOCTRC:	LDX	SPH
+  382   E195   09              		DEX				;X ZEIGT AUF USER-PCH
+  383   E196   7E E3 3A        		JMP	G2			;USER-PROGRAMM WIEDER STARTEN...
+  384                          	
+  385   E199   7E E1 32        	TENDE:	JMP	CONTRL
+  386                          	
+  387                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page    8
+
+
+
+
+  388                          	;-------------------------------------------
+  389                          	; USER-PROGRAMM BEI OPCODE-FEHLER ABBRECHEN
+  390                          	;-------------------------------------------
+  391                          	
+  392   E19C   30              	OPCERR:	TSX				;X ZEIGT AUF USER-F
+  393   E19D   8F              		XGDX
+  394   E19E   C3 00 08        		ADDD	#8
+  395   E1A1   FD 9F 09        		STD	SPH			;USER-SP VOR DEM EINSPRUNG !
+  396   E1A4   8E 9F 78        		LDS	#STACK
+  397   E1A7   0E              		CLI				;INTERRUPT WIEDER FREIGEBEN
+  398   E1A8   CE F0 A9        		LDX	#OPCODM
+  399   E1AB   BD E6 74        		JSR	OUTSTR
+  400   E1AE   7E E2 34        		JMP	PCOUT
+  401                          	
+  402                          	
+  403                          	
+  404                          	;----------------------------------------------------------------
+  405                          	; KOMMANDO MIT CTRL/C ABBRECHEN ODER BEI CTRL/T REGISTER AUSGEBEN
+  406                          	;----------------------------------------------------------------
+  407                          	
+  408   E1B1   B6 10 2E        	ABORT	LDAA	SCSR		;DATEN VOM SCI ?
+  409   E1B4   27 1E           		BEQ	EXIT1		;NEIN, UNERKLAERLICHER INTERRUPT
+  410   E1B6   84 28           		ANDA	#%00101000	;RDRF UND ORFE BITS HERAUSLOESEN
+  411   E1B8   F6 9F 28        		LDAB	SYSFLG
+  412   E1BB   C4 D7           		ANDB	#%11010111	;RDRF UND ORFE BIT LOESCHEN
+  413   E1BD   1B              		ABA			;	UND NEUE BITS EINBINDEN
+  414   E1BE   36              		PSHA
+  415   E1BF   F6 10 2F        		LDAB	SCDR		;NEUES ZEICHEN LESEN
+  416   E1C2   C1 03           		CMPB	#CTRLC		;ABBRUCHZEICHEN EMPFANGEN ?
+  417   E1C4   27 2E           		BEQ	EXIT2		;JA:
+  418   E1C6   47              		ASRA			;NEIN: USER MODE EINGESCHALTET ?
+  419   E1C7   24 04           		BCC	SAVECH		;NEIN: ZEICHEN ABSPEICHERN
+  420   E1C9   C1 14           		CMPB	#CTRLT		;JA:	 ZEICHEN = CTRL/T ?
+  421   E1CB   27 08           		BEQ	CTRLTI
+  422   E1CD   32              	SAVECH:	PULA			;RDRF UND ORFE LADEN
+  423   E1CE   B7 9F 28        		STAA	SYSFLG
+  424   E1D1   F7 9F 25        		STAB	RXDATA		;1 BYTE BUFFER
+  425   E1D4   3B              	EXIT1:	RTI
+  426                          	
+  427                          	;CTRL/T GIBT IM LAUFENDEN USER-PROGRAMM ALLE CPU-REGISTER AUS
+  428                          	
+  429   E1D5   B6 9F 28        	CTRLTI:	LDAA	SYSFLG
+  430   E1D8   85 40           		BITA	#%01000000	;CTRL/C GESPERRT?
+  431   E1DA   26 F1           		BNE	SAVECH		;JA, DANN KEIN STATUS ANZEIGEN!
+  432   E1DC   85 80           		BITA	#%10000000	;AUTO-BREAKPOINT BEI TRACE AKTIV?
+  433   E1DE   26 04           		BNE	SHOWIT		;JA, DANN IST CTRL/T AKTIV!
+  434   E1E0   85 12           		BITA	#%00010010	;SINGLE-STEP ODER NORMALER TRACE?
+  435   E1E2   26 F0           		BNE	EXIT1		;JA: DANN KEIN CTRL/T SINNVOLL !
+  436   E1E4   31              	SHOWIT:	INS			;STACK KORRIGIEREN
+  437   E1E5   30              		TSX			;	UND USER STACKPOINTER RETTEN
+  438   E1E6   8F              		XGDX			;USER-SP ZEIGT NUN AUF DIE
+  439   E1E7   C3 00 08        		ADDD	#8		;	ADRESSE VOR DEM INTERRUPT !
+  440   E1EA   FD 9F 09        		STD	SPH		;USER-SP SPEICHERN
+  441   E1ED   BD E6 57        		JSR	OUTCL		;IM LAUFENDEN USER-PROGRAMM
+  442   E1F0   BD E5 14        		JSR	USRREG		;ALLE CPU-REGISTER AUSGEBEN
+  443   E1F3   3B              		RTI
+  444                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page    9
+
+
+
+
+  445                          	;AUSWERTUNG DES ABBRUCHZEICHENS CTRL/C
+  446                          	
+  447   E1F4   85 40           	EXIT2:	BITA	#%01000000	;CTRL/C GESPERRT?
+  448   E1F6   26 D5           		BNE	SAVECH		;JA, DANN PROGRAMM NICHT ABBRECHEN
+  449   E1F8   85 01           		BITA	#%00000001	;USER MODE GESETZT ?
+  450   E1FA   26 0A           		BNE	ABORT1		;JA:	 USERPROGRAMM ABBRECHEN
+  451   E1FC   7E E1 32        	EXIT2A:	JMP	CONTRL		;NEIN: ABBRUCH EINES HAUPTKOMMANDOS
+  452                          	
+  453   E1FF   32              	EXIT2B:	PULA
+  454   E200   8A 04           		ORAA	#%00000100	;CTRL/C-FLAG SETZEN
+  455   E202   B7 9F 28        		STAA	SYSFLG		;CTRL/C-EINGABE MERKEN!
+  456   E205   3B              		RTI
+  457                          	
+  458                          	;ABBRUCH EINES USER-PROGRAMMS
+  459                          	
+  460   E206   85 80           	ABORT1:	BITA	#%10000000	;AUTO-BREAKPOINT BEI TRACE AKTIV?
+  461   E208   26 08           		BNE	 BRKIT		;JA, DANN IST CTRL/C AKTIV!
+  462   E20A   85 02           		BITA	 #%00000010	;TRACE MODE GESETZT?
+  463   E20C   26 F1           		BNE	 EXIT2B 	;JA...
+  464   E20E   85 10           		BITA	 #%00010000	;SINGLE STEP MODE GESETZT?
+  465   E210   26 EA           		BNE	 EXIT2A 	;JA...
+  466   E212   30              	BRKIT:	TSX			;USER STACKPOINTER RETTEN
+  467   E213   8F              		XGDX			;USER-SP ZEIGT NUN AUF DIE
+  468   E214   C3 00 09        		ADDD	 #9		;  ADRESSE VOR DEM INTERRUPT !
+  469   E217   FD 9F 09        		STD	 SPH		;USER-SP SPEICHERN
+  470   E21A   8F              		XGDX
+  471   E21B   B6 9F 28        		LDAA	 SYSFLG
+  472   E21E   85 80           		BITA	 #%10000000	;AUTO-BREAK MODE?
+  473   E220   27 08           		BEQ	 SUMONI 	;NEIN...
+  474   E222   FE 9F 18        		LDX	 AUTOBK 	;AUTO-BREAKPOINT-ADRESSE LADEN
+  475   E225   B6 9F 1A        		LDAA	 AUTOOP 	;    UND ALTEN OPCODE
+  476   E228   A7 00           		STAA	 ,X		;	WIEDER SETZEN
+  477   E22A   8E 9F 78        	SUMONI:	LDS	 #STACK 	;MONITOR STACK SETZEN
+  478   E22D   0E              		CLI			;INTERRUPT WIEDER FREIGEBEN
+  479   E22E   7F 9F 28        	CTRLCA:	CLR	 SYSFLG 	;SYSTEM NEU INITIALISIEREN
+  480   E231   CE F0 7D        		LDX	 #CTRLCM	;ABBRUCHMELDUNG AUSGEBEN
+  481   E234   BD E6 74        	PCOUT:	JSR	 OUTSTR
+  482   E237   FE 9F 09        		LDX	 SPH		;X ZEIGT NUN AUF USER-PCL
+  483   E23A   09              		DEX			;	UND JETZT AUF USER-PCH
+  484   E23B   BD E6 89        		JSR	 OUT4H		;USER-PC AUSGEBEN
+  485   E23E   7E E1 32        		JMP	 CONTRL
+  486                          	
+  487                          	
+  488                          	;*****************************
+  489                          	;	SYSTEMUNTERPROGRAMME
+  490                          	;*****************************
+  491                          	
+  492                          	;---------------------------------
+  493                          	; ANZEIGE EINES SPEICHERBEREICHS
+  494                          	;---------------------------------
+  495                          	
+  496   E241   CE EE 88        	DUMP:	LDX	#TXTDUM
+  497   E244   BD E6 74        		JSR	OUTSTR
+  498   E247   BD E6 DE        		JSR	INP4HX
+  499   E24A   24 06           		BCC	D1
+  500   E24C   CE F0 1A        	DERR:	LDX	#CHRERR
+  501   E24F   7E E6 74        		JMP	OUTSTR
+  Sun Mar 15 2026 13:59                                                                                                  Page   10
+
+
+
+
+  502                          	
+  503   E252   FF 9F 1F        	D1:	STX	YHI		;STARTADRESSE MERKEN
+  504   E255   CE EB D8        		LDX	#TOMSG
+  505   E258   BD E6 74        		JSR	OUTSTR
+  506   E25B   BD E6 DE        		JSR	INP4HX
+  507   E25E   25 EC           		BCS	DERR
+  508   E260   FF 9F 21        		STX	ZHI		;ENDADRESSE RETTEN
+  509   E263   FE 9F 1F        		LDX	YHI		;STARTADRESSE LADEN
+  510   E266   BD E6 57        	DUMP1:	JSR	OUTCL		;NEUE ZEILE ANFANGEN
+  511   E269   8F              		XGDX
+  512   E26A   C4 F0           		ANDB	#$F0		;ANFANG AUF VIELFACHEN VON 16
+  513   E26C   8F              		XGDX
+  514   E26D   3C              		PSHX			;DIE NORMALISIERTE ADRESSE RETTEN
+  515   E26E   BD E6 83        		JSR	OUTX		;NORMALISIERTE ADRESSE AUSGEBEN
+  516   E271   BD E6 4B        		JSR	OUTDS		;DOPPELTER ZWISCHENRAUM
+  517   E274   38              		PULX			;NORMALISIERTE ADRESSE ZURUECKLADEN
+  518   E275   BC 9F 1F        	DUMP11:	CPX	YHI		;NORMALISIERTE = RICHTIGE STARTADRESSE ?
+  519   E278   27 09           		BEQ	DUMP12
+  520   E27A   08              		INX			;NORMALISIERTE ADRESSE ERHOEHEN
+  521   E27B   BD E6 51        		JSR	OUTDM		;ZWEI STRICHE AUSGEBEN
+  522   E27E   BD E6 62        		JSR	TRENNZ		;TRENNZEICHEN (1 ODER 2 SPACE) AUSGEBEN
+  523   E281   20 F2           		BRA	DUMP11
+  524                          	
+  525   E283   FE 9F 1F        	DUMP12:	LDX	YHI		;DAS IST DIE RICHTIGE STARTADRESSE
+  526   E286   BD E6 8B        	DUMP2:	JSR	OUT2H		;ADRESSIERTES BYTE
+  527   E289   BD E6 62        		JSR	TRENNZ		;    UND TRENNZEICHEN AUSGEBEN
+  528   E28C   09              		DEX			;KORREKTUR FUER ENDVERGLEICH
+  529   E28D   BC 9F 21        		CPX	ZHI		;ENDADRESSE ERREICHT ?
+  530   E290   27 09           		BEQ	DUMP21 	 	;JA
+  531   E292   08              		INX			;NAECHSTE ADRESSE
+  532   E293   8F              		XGDX
+  533   E294   C5 0F           		BITB	#$F		;EINE HEX-ZEILE FERTIG ?
+  534   E296   8F              		XGDX
+  535   E297   26 ED           		BNE	DUMP2		;NEIN, WEITER...
+  536   E299   20 10           		BRA	DUMP23
+  537                          	
+  538   E29B   08              	DUMP21:	INX			;ADRESSE+1
+  539   E29C   8F              	DUMP22:	XGDX			;UNTERSTES DIGIT DER STARTADRESSE
+  540   E29D   C5 0F           		BITB	#$F		;	IM B-REGISTER ABTRENNEN
+  541   E29F   8F              		XGDX
+  542   E2A0   27 09           		BEQ	DUMP23		;NULL: DANN KEINE AUFFUELLUNG NOETIG
+  543   E2A2   BD E6 51        		JSR	OUTDM		;ZWEI STRICHE AUSGEBEN
+  544   E2A5   08              		INX			;ADRESSE+1
+  545   E2A6   BD E6 62        		JSR	TRENNZ		;TRENNZEICHEN (1 ODER 2 SPACE) AUSGEBEN
+  546   E2A9   20 F1           		BRA	DUMP22
+  547                          	
+  548   E2AB   BD E6 4D        	DUMP23:	JSR	OUTS		;ABSTANDSHALTER FUER DB-AUSGABE
+  549   E2AE   FC 9F 1F        		LDD	YHI
+  550   E2B1   C4 F0           		ANDB	#$F0
+  551   E2B3   8F              		XGDX
+  552   E2B4   BC 9F 1F        	DUMP3:	CPX	YHI		;NORMALISIERTE = RICHTIGE STARTADRESSE ?
+  553   E2B7   27 06           		BEQ	DUMP32
+  554   E2B9   BD E6 4D        		JSR	OUTS		;NEIN, DANN SPACE AUSGEBEN
+  555   E2BC   08              		INX
+  556   E2BD   20 F5           		BRA	DUMP3
+  557                          	
+  558   E2BF   A6 00           	DUMP32:	LDAA	,X		;EIN BYTE HOLEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   11
+
+
+
+
+  559   E2C1   4C              		INCA			;BYTE FUER DB-TEST ERHOEHEN
+  560   E2C2   84 7F           		ANDA	#$7F		;	UND STEUERZEICHEN MASKIEREN
+  561   E2C4   81 20           		CMPA	#$20		;> ALS SPACE ?
+  562   E2C6   22 02           		BHI	ASCOUT 	 	;JA
+  563   E2C8   86 2F           		LDAA	#'.'+1 		;FUELL-ZEICHEN
+  564   E2CA   4A              	ASCOUT:	DECA			;ORIGINALZEICHEN WIEDER ERZEUGEN
+  565   E2CB   BD E6 11        		JSR	WRITE		;	UND AUSGEBEN
+  566   E2CE   BC 9F 21        		CPX	ZHI		;	ENDADRESSE ERREICHT ?
+  567   E2D1   27 0D           		BEQ	DMPEND 	 	;JA, DANN IST ALLES GETAN
+  568   E2D3   08              		INX
+  569   E2D4   8F              		XGDX
+  570   E2D5   C5 0F           		BITB	#$F		;EINE ZEILE FERTIG ?
+  571   E2D7   8F              		XGDX
+  572   E2D8   26 E5           		BNE	DUMP32		;NEIN...
+  573   E2DA   FF 9F 1F        		STX	YHI
+  574   E2DD   7E E2 66        		JMP	DUMP1
+  575                          	
+  576   E2E0   39              	DMPEND:	RTS
+  577                          	
+  578                          	
+  579                          	
+  580                          	;----------------------------------------------------------------
+  581                          	; STARTEN VON USER-PROGRAMMEN SINGLE-STEP/TRACE/GOTO
+  582                          	;----------------------------------------------------------------
+  583                          	
+  584   E2E1   0F              	STEP:	SEI
+  585   E2E2   B6 9F 28        		LDAA	SYSFLG
+  586   E2E5   8A 10           		ORAA	#%00010000	;SINGLE-STEP BIT
+  587   E2E7   B7 9F 28        		STAA	SYSFLG		;    SETZEN
+  588   E2EA   0E              		CLI
+  589   E2EB   CE EE D7        		LDX	#TXTSGL
+  590   E2EE   BD E6 74        		JSR	OUTSTR
+  591   E2F1   20 28           		BRA	G0A
+  592                          	
+  593   E2F3   0F              	TRACE:	SEI
+  594   E2F4   B6 9F 28        		LDAA	SYSFLG
+  595   E2F7   8A 02           		ORAA	#%00000010	;TRACE BIT
+  596   E2F9   B7 9F 28        		STAA	SYSFLG		;    SETZEN
+  597   E2FC   0E              		CLI
+  598   E2FD   CE EE B9        		LDX	#TXTTRC
+  599   E300   20 03           		BRA	G0
+  600                          	
+  601   E302   CE EE A1        	GOTO:	LDX	#TXTGOT
+  602   E305   BD E6 74        	G0:	JSR	OUTSTR
+  603   E308   BD E6 DE        		JSR	INP4HX		;STARTADRESSE HOLEN
+  604   E30B   24 1A           		BCC	G1
+  605   E30D   C1 0D           		CMPB	#CR		;LETZTE USER-ADRESSE IM PC VERWENDEN?
+  606   E30F   26 10           		BNE	GOABOR
+  607   E311   B6 9F 28        		LDAA	SYSFLG
+  608   E314   85 02           		BITA	#%00000010	;TRACE BIT GESETZT?
+  609   E316   26 03           		BNE	G0A		; JA...
+  610   E318   BD E6 57        		JSR	OUTCL		;NUR BEI G-BEFEHL NEUE ZEILE ANFANGEN
+  611   E31B   FE 9F 09        	G0A:	LDX	SPH
+  612   E31E   09              		DEX			;X ZEIGT AUF USER-PCH
+  613   E31F   20 19           		BRA	G2		;MIT ALTEM PC WEITERMACHEN...
+  614                          	
+  615   E321   CE F0 1A        	GOABOR:	LDX	#CHRERR
+  Sun Mar 15 2026 13:59                                                                                                  Page   12
+
+
+
+
+  616   E324   7E E6 74        		JMP	OUTSTR
+  617                          	
+  618   E327   FE 9F 09        	G1:	LDX	SPH
+  619   E32A   09              		DEX			;X ZEIGT AUF USER-PCH
+  620   E32B   FC 9F 1B        		LDD	IOWH		;STARTADRESSE NOCHEINMAL LADEN
+  621   E32E   ED 00           		STD	,X		; UND IN USER-PC SCHREIBEN
+  622   E330   A3 00           		SUBD	,X		;VERGLEICH: "CMPD ,X" SP IN RAM ?
+  623   E332   27 06           		BEQ	G2
+  624   E334   CE F0 2E        		LDX	#GOERR
+  625   E337   7E E6 74        		JMP	OUTSTR
+  626                          	
+  627   E33A   8F              	G2:	XGDX
+  628   E33B   83 00 07        		SUBD	#$7		;AUF USER-F ZEIGEN
+  629   E33E   8F              		XGDX			;X = START-SP DES USERS (ZEIGT AUF FLAGS)
+  630   E33F   B6 9F 28        		LDAA	SYSFLG
+  631   E342   85 12           		BITA	#%00010010	;SINGLE STEP ODER TRACE?
+  632   E344   26 03           		BNE	G2C		; JA...
+  633   E346   7E E3 D7        		JMP	G3
+  634                          	
+  635   E349   BD E6 57        	G2C:	JSR	OUTCL		;JA: NEUE ZEILE ANFANGEN
+  636   E34C   BD E9 44        		JSR	PSOPC		;JA: CPU-REGISTER UND NAECHSTEN OPCODE ANZEIGEN
+  637   E34F   81 3F           		CMPA	#SWI		;NAECHSTER OPCODE=SWI (BREAKPOINT) ?
+  638   E351   26 03           		BNE	G2B
+  639   E353   7E E4 0E        		JMP	BREAK0		;PROGRAMM ABBRECHEN
+  640                          	
+  641   E356   3C              	G2B:	PSHX			;USER-SP RETTEN
+  642   E357   36              		PSHA
+  643   E358   B6 9F 28        		LDAA	SYSFLG
+  644   E35B   85 02           		BITA	#%00000010	;TRACE MODE?
+  645   E35D   32              		PULA
+  646   E35E   27 57           		BEQ	NOCALL		;NEIN, DANN KEINE CALL-UEBERPRUEFUNG...
+  647   E360   CE FA 4F        		LDX	#CALTAB		;TABELLE MIT CALL-OPCODES
+  648   E363   A1 00           		CMPA	0,X		;BSR ?
+  649   E365   27 0C           		BEQ	CALTST
+  650   E367   A1 01           		CMPA	1,X		;JSRd ?
+  651   E369   27 08           		BEQ	CALTST
+  652   E36B   A1 02           		CMPA	2,X		;JSR, ?
+  653   E36D   27 04           		BEQ	CALTST
+  654   E36F   A1 03           		CMPA	3,X		;JSRe ?
+  655   E371   26 44           		BNE	NOCALL
+  656   E373   CE EF 7A        	CALTST:	LDX	#CALTXT
+  657   E376   BD E6 74        		JSR	OUTSTR
+  658   E379   BD E6 3D        		JSR	ECHO		;ANTWORT ABHOLEN
+  659   E37C   36              		PSHA
+  660   E37D   B6 9F 28        		LDAA	SYSFLG
+  661   E380   85 04           		BITA	#%00000100	;CTRL/C-EINGABE?
+  662   E382   32              		PULA
+  663   E383   27 03           		BEQ	TRCTST		;NEIN...
+  664   E385   7E E2 2E        		JMP	CTRLCA		;CTRL/C-ABBRUCHMELDUNG AUSGEBEN
+  665                          	
+  666   E388   81 4E           	TRCTST:	CMPA	#'N'
+  667   E38A   26 2B           		BNE	NOCALL		;MIT NORMALEN TRACE WEITERMACHEN...
+  668   E38C   FE 9F 09        		LDX	SPH
+  669   E38F   09              		DEX			;-> USER-PC
+  670   E390   EE 00           		LDX	,X		;NAECHSTE ADRESSE IM USERPROGRAMM
+  671   E392   3A              		ABX			;ADRESSE NACH DEM CALL-BEFEHL
+  672   E393   FF 9F 18        		STX	AUTOBK		;ADRESSE DES AUTO-BREAKPOINTS MERKEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   13
+
+
+
+
+  673   E396   A6 00           		LDAA	,X		;USER-OPCODE LADEN
+  674   E398   B7 9F 1A        		STAA	AUTOOP		;  UND MERKEN
+  675   E39B   86 3F           		LDAA	#SWI		;BREAKPOINT-OPCODE LADEN
+  676   E39D   A7 00           		STAA	,X		; UND ABSPEICHERN
+  677   E39F   A1 00           		CMPA	,X		;BREAKPOINT IM RAM-BEREICH?
+  678   E3A1   27 08           		BEQ	AUTOOK
+  679   E3A3   CE EF 97        		LDX	#SORRY
+  680   E3A6   BD E0 0F        		JSR	PRINT
+  681   E3A9   20 0C           		BRA	NOCALL
+  682                          	
+  683   E3AB   0F              	AUTOOK:	SEI
+  684   E3AC   B6 9F 28        		LDAA	SYSFLG
+  685   E3AF   8A 80           		ORAA	#%10000000	;AUTO-BREAKPOINT FLAG SETZEN
+  686   E3B1   B7 9F 28        		STAA	SYSFLG
+  687   E3B4   38              		PULX			;USER SP WIEDER LADEN
+  688   E3B5   20 20           		BRA	G3		;JETZT KEIN TRACE AUSLOESEN!
+  689                          	
+  690   E3B7   0F              	NOCALL: SEI
+  691   E3B8   B6 9F 28        		LDAA	SYSFLG
+  692   E3BB   84 7F           		ANDA	#%01111111	;AUTO-BREAKPOINT FLAG LOESCHEN
+  693   E3BD   B7 9F 28        		STAA	SYSFLG
+  694   E3C0   38              		PULX			;USER SP WIEDER LADEN
+  695   E3C1   FC 10 0E        		LDD	TCNT		;* AKTUELLEN TIMERSTAND LADEN
+  696   E3C4   C3 00 36        		ADDD	#SINGLE		;* UND ZEIT FUER DIE AUSFUEHUNG EINES
+  697   E3C7   FD 10 1E        		STD	TOC5		;*OPCODES PLUS VERWALTUNGSZEIT ADDIEREN
+  698   E3CA   86 08           		LDAA	#%00001000	;INTERRUPT-FLAG LOESCHEN
+  699   E3CC   B7 10 23        		STAA	TFLG1
+  700   E3CF   B6 10 22        		LDAA	TMSK1		;*OC5-IRQ FREIGEBEN
+  701   E3D2   8A 08           		ORAA	#%00001000
+  702   E3D4   B7 10 22        		STAA	TMSK1
+  703   E3D7   0F              	G3:	SEI			;* INTERRUPT SPERREN, DAMIT
+  704   E3D8   B6 9F 28        		LDAA	SYSFLG 		;* SYSFLG NICHT ZERSTOERT WIRD !
+  705   E3DB   8A 01           		ORAA	#1		;* USER-MODE
+  706   E3DD   B7 9F 28        		STAA	SYSFLG 		;* EINSCHALTEN
+  707   E3E0   35              		TXS			;* USER-SP AUF F-1 SETZEN
+  708   E3E1   3B              		RTI			;* SPRUNG ZUM ANWENDERPROGRAMM
+  709                          					;+++++++++++++++++++++++++++++++++++++++
+  710                          		;USER;			; HIER ZWISCHEN LAEUFT DAS USER-PROGRAMM
+  711                          					;+++++++++++++++++++++++++++++++++++++++
+  712   E3E2   30              	BREAK:	TSX			;X ZEIGT AUF USER-F
+  713   E3E3   8F              		XGDX
+  714   E3E4   C3 00 08        		ADDD	#8
+  715   E3E7   8F              		XGDX
+  716   E3E8   FF 9F 09        		STX	SPH		;USER-SP VOR DEM EINSPRUNG !
+  717   E3EB   8E 9F 78        		LDS	#STACK
+  718   E3EE   0E              		CLI			;INTERRUPT WIEDER FREIGEBEN
+  719   E3EF   B6 9F 28        		LDAA	SYSFLG
+  720   E3F2   85 80           		BITA	#%10000000	;AUTO-BREAKPOINT FLAG GESETZT?
+  721   E3F4   27 18           		BEQ	BREAK0		;NEIN, NORMALER BREAKPOINT!
+  722   E3F6   09              		DEX			; -> USER-PC
+  723   E3F7   EE 00           		LDX	,X		;NAECHSTE ADRESSE IM USER-PROGRAMM
+  724   E3F9   09              		DEX			;ADRESSE DES BREAKPOINTS
+  725   E3FA   BC 9F 18        		CPX	AUTOBK		;IDENTISCH MIT AUTO-BREAKPOINT?
+  726   E3FD   26 0F           		BNE	BREAK0		;NEIN...
+  727   E3FF   B6 9F 1A        		LDAA	AUTOOP		;JA, DANN ALTEN OPCODE
+  728   E402   A7 00           		STAA	,X		;  WIEDER SETZEN
+  729   E404   8F              		XGDX
+  Sun Mar 15 2026 13:59                                                                                                  Page   14
+
+
+
+
+  730   E405   FE 9F 09        		LDX	SPH
+  731   E408   09              		DEX			; -> USER-PC
+  732   E409   ED 00           		STD	,X		;NAECHSTE ADRESSE = PC-1 !
+  733   E40B   7E E3 3A        		JMP	G2		;USER-PROGRAMM WIEDER STARTEN...
+  734                          	
+  735   E40E   BD E6 57        	BREAK0:	JSR	OUTCL
+  736   E411   CE F0 5F        		LDX	#BRKMSG
+  737   E414   BD E6 74        		JSR	OUTSTR
+  738   E417   FE 9F 09        		LDX	SPH
+  739   E41A   09              		DEX			;ADRESSIERE USER-PCH
+  740   E41B   EE 00           		LDX	,X
+  741   E41D   09              		DEX			;ADRESSE DES BREAKPOINTS (SWI)
+  742   E41E   BD E6 83        		JSR	OUTX		;  AUSGEBEN
+  743   E421   7E E1 32        		JMP	CONTRL
+  744                          	
+  745                          	;-----------------------------
+  746                          	; LADEN VON MOTOROLA RECORDS
+  747                          	;-----------------------------
+  748                          	
+  749   E424   CE EE E5        	LOAD:	LDX	#TXTLOA
+  750   E427   BD E6 74        		JSR	OUTSTR
+  751   E42A   BD E6 57        	LOAD2:	JSR	OUTCL
+  752   E42D   BD E6 3D        	LOAD3:	JSR	ECHO		;WARTE AUF EIN ZEICHEN
+  753   E430   81 53           		CMPA	#'S'		;ES MUSS DAS MOTOROLA 'S' SEIN !
+  754   E432   26 F9           		BNE	LOAD3		;  ALLES ANDERE IGNORIEREN
+  755   E434   BD E6 3D        		JSR	ECHO		;OK, WIR HABEN ES BEKOMMEN
+  756   E437   81 39           		CMPA	#'9'		;EINE '9' KENNZEICHNET ENDE
+  757   E439   27 4A           		BEQ	LOAD17
+  758   E43B   81 31           		CMPA	#'1'		;EINE '1' KENNZEICHNET DATEN
+  759   E43D   26 EE           		BNE	LOAD3		;ALLES ANDERE IGNORIEREN WIR (AUCH '0')
+  760   E43F   7F 9F 26        		CLR	CKSUM		;AM ANFANG DES RECORDS: CHECKSUMME LOESCHEN
+  761   E442   BD E6 C3        		JSR	INP2HA		;LESE EIN BYTE
+  762   E445   24 05           		BCC	LOAD10
+  763   E447   CE F0 1A        	LOADER:	LDX	#CHRERR
+  764   E44A   20 36           		BRA	LOAD16
+  765                          	
+  766   E44C   80 02           	LOAD10:	SUBA	#2
+  767   E44E   B7 9F 27        		STAA	BYTECT		;BYTE ZAEHLER
+  768   E451   BD E6 DE        		JSR	INP4HX		;STARTADRESSE ERZEUGEN (-> ADD CKSUM)
+  769   E454   25 F1           		BCS	LOADER		;FEHLER!
+  770   E456   BD E6 C3        	LOAD11:	JSR	INP2HA		;LESE DATENBYTE (-> ADD CKSUM)
+  771   E459   25 EC           		BCS	LOADER		;FEHLER!
+  772   E45B   7A 9F 27        		DEC	BYTECT		;DATENBYTE ZAEHLEN, EIN RECORD FERTIG ?
+  773   E45E   27 1A           		BEQ	LOAD15		;JA:	 DANN CHECKSUMME TESTEN
+  774   E460   A7 00           		STAA	,X		;NEIN: SPEICHERE DATENBYTE
+  775   E462   A1 00           		CMPA	,X		;MEMORY OK ?
+  776   E464   27 11           		BEQ	LOAD12		;JA, DANN WEITER...
+  777   E466   3C              	STOERR:	PSHX			;LETZTE ADRESSE RETTEN
+  778   E467   CE EF B8        		LDX	#ERRMSG
+  779   E46A   BD E6 74        		JSR	OUTSTR
+  780   E46D   CE EF DF        		LDX	#AT
+  781   E470   BD E6 74        		JSR	OUTSTR
+  782   E473   38              		PULX
+  783   E474   7E E6 83        		JMP	OUTX		;FEHLERADRESSE AUSGEBEN
+  784                          	
+  785   E477   08              	LOAD12:	INX			;NAECHSTE ADRESSE
+  786   E478   20 DC           		BRA	LOAD11
+  Sun Mar 15 2026 13:59                                                                                                  Page   15
+
+
+
+
+  787                          	
+  788   E47A   7C 9F 26        	LOAD15:	INC	CKSUM		;CHECKSUMME OK ?
+  789   E47D   27 AB           		BEQ	LOAD2		;JA, DANN WEITER...
+  790   E47F   CE F0 03        		LDX	#CKSERR
+  791   E482   BD E6 74        	LOAD16:	JSR	OUTSTR
+  792   E485   39              	LOAD17:	RTS
+  793                          	
+  794                          	;-------------------------------------
+  795                          	; MEMORY ANSEHEN UND/ODER VERAENDERN
+  796                          	;-------------------------------------
+  797                          	
+  798   E486   CE EE FE        	MEMORY:	LDX	#TXTMEM
+  799   E489   BD E6 74        		JSR	OUTSTR
+  800   E48C   BD E6 F1        		JSR	SETBYT		;BYTE-OPERATION VOREINSTELLEN
+  801   E48F   BD E6 DE        		JSR	INP4HX		;MEMORY-ADRESSE HOLEN
+  802   E492   24 09           		BCC	SAMEA		;GUELTIGE HEX-EINGABE
+  803   E494   C1 52           		CMPB	#'R'		;REGISTER AUSGABE ?
+  804   E496   27 4C           		BEQ	SUBC
+  805   E498   C1 54           		CMPB	#'T'		;TEXT EINGABE ?
+  806   E49A   27 48           		BEQ	SUBC
+  807   E49C   39              		RTS
+  808                          	
+  809   E49D   FF 9F 21        	SAMEA:	STX	ZHI		;EINGEGEBENE ADRESSE RETTEN
+  810   E4A0   CE E7 C5        		LDX	#SAMEAD		;ADRESSE OEFFNEN
+  811   E4A3   20 60           		BRA	SCALL
+  812                          	
+  813                          	;-----------------------------
+  814                          	;	SUBCOMMAND INTERPRETER
+  815                          	;-----------------------------
+  816                          	
+  817   E4A5   BD E6 C3        	SUBCMD:	JSR	INP2HA		;HOLE BYTE ODER LETZTEN BUCHSTABEN
+  818   E4A8   25 3A           		BCS	SUBC		;NEUES KOMMANDO EINGEGEBEN
+  819   E4AA   F6 9F 28        		LDAB	SYSFLG
+  820   E4AD   C5 04           		BITB	#%00000100	;BYTE-OPERATION ?
+  821   E4AF   27 16           		BEQ	STOB		;JA...
+  822   E4B1   BD E6 E2        		JSR	INPS4X		;NEIN: REST VOM WORT HOLEN
+  823   E4B4   25 2E           		BCS	SUBC		;NEUES KOMMANDO EINGEGEBEN
+  824   E4B6   FC 9F 21        		LDD	ZHI		;AKTUELLE ADRESSE LADEN
+  825   E4B9   8F              		XGDX
+  826   E4BA   ED 00           		STD	,X		;WORT SPEICHERN
+  827   E4BC   A1 00           		CMPA	,X		;HIGHER BYTE IM SPEICHER OK ?
+  828   E4BE   26 10           		BNE	MEMERR		;NEIN...
+  829   E4C0   08              		INX
+  830   E4C1   E1 00           		CMPB	,X		;LOWER BYTE IM SPEICHER OK ?
+  831   E4C3   26 0B           		BNE	MEMERR		;NEIN...
+  832   E4C5   20 11           		BRA	STO
+  833                          	
+  834   E4C7   FE 9F 21        	STOB:	LDX	ZHI		;AKTUELLE ADRESSE LADEN
+  835   E4CA   A7 00           		STAA	,X		;BYTE SPEICHERN
+  836   E4CC   A1 00           		CMPA	,X		;SPEICHER OK ?
+  837   E4CE   27 08           		BEQ	STO
+  838   E4D0   CE EF BA        	MEMERR:	LDX	#CHGERR
+  839   E4D3   BD E6 74        		JSR	OUTSTR
+  840   E4D6   20 07           		BRA	SAME
+  841                          	
+  842   E4D8   08              	STO:	INX			;NAECHSTE ADRESSE EINSTELLEN
+  843   E4D9   FF 9F 21        		STX	ZHI		; UND ADRESSE RETTEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   16
+
+
+
+
+  844   E4DC   BD E6 F1        		JSR	SETBYT		;BYTE-MODE SETZEN
+  845   E4DF   CE E7 C5        	SAME:	LDX	#SAMEAD		;ADRESSE MIT INHALT OEFFNEN
+  846   E4E2   20 21           		BRA	SCALL
+  847                          	
+  848   E4E4   CE FA 71        	SUBC:	LDX	#MEMTAB		;START DER BEFEHLSTABELLE
+  849   E4E7   17              		TBA			;EINGABE RETTEN
+  850   E4E8   5F              		CLRB
+  851   E4E9   A1 00           	SEASC:	CMPA	,X		;ZEICHEN GEFUNDEN ?
+  852   E4EB   27 11           		BEQ	MFOUND
+  853   E4ED   08              		INX
+  854   E4EE   5C              		INCB
+  855   E4EF   C1 0B           		CMPB	#MEMVEK-MEMTAB  ;LAENGE DER BEFEHLSTABELLE
+  856   E4F1   26 F6           		BNE	SEASC
+  857   E4F3   CE F0 1A        	MCERR:	LDX	#CHRERR
+  858   E4F6   BD E6 74        		JSR	OUTSTR
+  859   E4F9   CE E7 C5        		LDX	#SAMEAD		;GLEICHE ADRESSE NOCHEINMAL OEFFNEN
+  860   E4FC   20 07           		BRA	SCALL
+  861                          	
+  862   E4FE   58              	MFOUND:	ASLB			;WORTOFFSET ERZEUGEN
+  863   E4FF   CE FA 7C        		LDX	#MEMVEK		;TABELLENSTART LADEN,
+  864   E502   3A              		ABX			; OFFSET ADDIEREN
+  865   E503   EE 00           		LDX	,X		;  UND SPRUNGADRESSE LADEN
+  866   E505   AD 00           	SCALL:	JSR	,X		;UNTERKOMMANDO AUSFUEHREN
+  867   E507   24 9C           		BCC	SUBCMD
+  868   E509   20 D9           		BRA	SUBC
+  869   E50B   31              	MEMEND:	INS			;RUECKSPRUNGADRESSE IN DEN SUBCOMMAND-
+  870   E50C   31              		INS			;  INTERPRETER ENTFERNEN UND RUECK-
+  871   E50D   39              		RTS			;	SPRUNG IN DIE HAUTKOMMANDOEBENE
+  872                          	
+  873                          	
+  874                          	;-----------------------------
+  875                          	; AUSGABE DER USER-REGISTER
+  876                          	;-----------------------------
+  877                          	
+  878   E50E   CE EF 1D        	CPUREG:	LDX	#TXTREG
+  879   E511   BD E6 74        		JSR	OUTSTR
+  880   E514   CE FA 9B        	USRREG:	LDX	#FREG
+  881   E517   BD E6 74        		JSR	OUTSTR
+  882   E51A   FC 9F 09        		LDD	SPH		;LADE USER-SP
+  883   E51D   83 00 08        		SUBD	#8		;ZEIGE AUF USER-F
+  884   E520   8F              		XGDX
+  885   E521   E6 00           		LDAB	,X		;LADE USER-F-REGISTER
+  886   E523   08              		INX
+  887   E524   3C              		PSHX			;X ZEIGT SCHON AUF USER-B REGISTER
+  888   E525   CE FA 92        		LDX	#FLAGS		;FLAG TABLE
+  889   E528   A6 00           	REGLOP:	LDAA	,X		;LADE FLAG-BUCHSTABEN, FERTIG ?
+  890   E52A   27 0B           		BEQ	ENDFLG		;JA
+  891   E52C   08              		INX
+  892   E52D   58              		ASLB			;F-BIT GESETZT ?
+  893   E52E   25 02           		BCS	FLGOUT		;JA
+  894   E530   86 2E           		LDAA	#'.'		;NEIN: LADE CLR-ZEICHEN
+  895   E532   BD E6 11        	FLGOUT:	JSR	WRITE		;  UND GEBE ES AUS
+  896   E535   20 F1           		BRA	REGLOP
+  897                          	
+  898   E537   BD E6 4D        	ENDFLG:	JSR	OUTS
+  899   E53A   CE FA 9E        		LDX	#BREG		;DB-TABELLE MIT REGISTERNAMEN
+  900   E53D   FF 9F 1F        		STX	YHI
+  Sun Mar 15 2026 13:59                                                                                                  Page   17
+
+
+
+
+  901   E540   38              		PULX			;ADRESSE VOM USER-B REGISTER
+  902   E541   BD E8 A4        	CONREG:	JSR	REGOUT
+  903   E544   3A              		ABX			;NEUE ADRESSE SETZEN
+  904   E545   3C              		PSHX
+  905   E546   FE 9F 1F        		LDX	YHI
+  906   E549   09              		DEX
+  907   E54A   6D 00           		TST	,X		;LETZE AUSGABE SP ?
+  908   E54C   26 0A           		BNE	NOTSP		; NEIN...
+  909   E54E   38              		PULX
+  910   E54F   FE 9F 09        		LDX	SPH		;ZEIGE AUF
+  911   E552   09              		DEX			;	USER-PCH
+  912   E553   3C              		PSHX
+  913   E554   FE 9F 1F        		LDX	YHI
+  914   E557   09              		DEX
+  915   E558   08              	NOTSP:	INX
+  916   E559   6D 00           		TST	,X		;ENDE DER REGISTERAUSGABE ?
+  917   E55B   38              		PULX
+  918   E55C   2A E3           		BPL	CONREG		;NEIN...
+  919   E55E   39              	DONREG:	RTS
+  920                          	
+  921                          	
+  922                          	;--------------------------------------------
+  923                          	; VERSCHIEBEN/KOPIEREN VON SPEICHERBEREICHEN
+  924                          	;--------------------------------------------
+  925                          	
+  926   E55F   CE EF 54        	COPY:	LDX	#TXTCOP
+  927   E562   BD E6 74        		JSR	OUTSTR
+  928   E565   BD E6 DE        		JSR	INP4HX		;STARTADRESSE
+  929   E568   25 53           		BCS	COVEND
+  930   E56A   FF 9F 1D        		STX	XHI
+  931   E56D   CE EB D8        		LDX	#TOMSG
+  932   E570   BD E6 74        		JSR	OUTSTR
+  933   E573   BD E6 DE        		JSR	INP4HX		;ENDADRESSE
+  934   E576   25 45           		BCS	COVEND
+  935   E578   FF 9F 1F        		STX	YHI
+  936   E57B   BC 9F 1D        		CPX	XHI		;ENDE >= START ?
+  937   E57E   22 09           		BHI	COP01		;JA...
+  938   E580   FC 9F 1D        		LDD	XHI		;UNTERE GRENZE
+  939   E583   FF 9F 1D        		STX	XHI		; MIT
+  940   E586   FD 9F 1F        		STD	YHI		; OBERER GRENZE VERTAUSCHEN
+  941   E589   CE EF DF        	COP01:	LDX	#AT
+  942   E58C   BD E6 74        		JSR	OUTSTR
+  943   E58F   BD E6 DE        		JSR	INP4HX		;ZIELADRESSE
+  944   E592   25 29           		BCS	COVEND
+  945   E594   FF 9F 21        		STX	ZHI
+  946   E597   BC 9F 1D        		CPX	XHI		;ZIEL > START ?
+  947   E59A   22 22           		BHI	COR		;JA...
+  948                          	
+  949                          	; VORWAERTS KOPIEREN
+  950                          	
+  951   E59C   FE 9F 1D        	COV:	LDX	XHI		;STARTADRESSE
+  952   E59F   A6 00           	COVLOP:	LDAA	0,X		;EIN BYTE HOLEN
+  953   E5A1   3C              		PSHX
+  954   E5A2   FE 9F 21        		LDX	ZHI		;ZIELADRESSE
+  955   E5A5   A7 00           		STAA	0,X		;KOPIEREN
+  956   E5A7   A1 00           		CMPA	0,X		;MEMORY OK ?
+  957   E5A9   27 05           		BEQ	COV1		;JA
+  Sun Mar 15 2026 13:59                                                                                                  Page   18
+
+
+
+
+  958   E5AB   31              	COPERR:	INS			;STACK KORRIGIEREN
+  959   E5AC   31              		INS			;WEGEN "PSHX"-BEFEHL
+  960   E5AD   7E E4 66        		JMP	STOERR		;FEHLERADRESSE AUSGEBEN
+  961                          	
+  962   E5B0   08              	COV1:	INX
+  963   E5B1   FF 9F 21        		STX	ZHI		;NEUE ZIELADRESSE SPEICHERN
+  964   E5B4   38              		PULX
+  965   E5B5   BC 9F 1F        		CPX	YHI		;ENDE ERREICHT ?
+  966   E5B8   27 03           		BEQ	COVEND		;JA
+  967   E5BA   08              		INX			;NEIN: STARTADRESSE ERHOEHEN
+  968   E5BB   20 E2           		BRA	COVLOP
+  969                          	
+  970   E5BD   39              	COVEND:	RTS
+  971                          	
+  972                          	; RUECKWAERTS KOPIEREN
+  973                          	
+  974   E5BE   FC 9F 1F        	COR:	LDD	YHI		;ENDADRESSE
+  975   E5C1   B3 9F 1D        		SUBD	XHI		;  - STARTADRESSE
+  976   E5C4   F3 9F 21        		ADDD	ZHI		;  + ZIELADR = LETZTE ZIELADR
+  977   E5C7   FD 9F 21        		STD	ZHI
+  978   E5CA   FE 9F 1F        		LDX	YHI		;ENDADRESSE
+  979   E5CD   A6 00           	CORLOP:	LDAA	0,X		;EIN BYTE HOLEN
+  980   E5CF   3C              		PSHX
+  981   E5D0   FE 9F 21        		LDX	ZHI		;ZIELADRESSE
+  982   E5D3   A7 00           		STAA	0,X		;KOPIEREN
+  983   E5D5   A1 00           		CMPA	0,X		;MEMORY OK ?
+  984   E5D7   26 D2           		BNE	COPERR		;NEIN...
+  985   E5D9   09              		DEX
+  986   E5DA   FF 9F 21        		STX	ZHI		;NEUE ZIELADRESSE SPEICHERN
+  987   E5DD   38              		PULX
+  988   E5DE   BC 9F 1D        		CPX	XHI		;START ERREICHT ?
+  989   E5E1   27 03           		BEQ	COREND		;JA
+  990   E5E3   09              		DEX			;NEIN: ENDADRESSE ERHOEHEN
+  991   E5E4   20 E7           		BRA	CORLOP
+  992                          	
+  993   E5E6   39              	COREND:	RTS
+  994                          	
+  995                          	
+  996                          	;**********************************
+  997                          	;	ALLGEMEINE UNTERPROGRAMME
+  998                          	;**********************************
+  999                          	
+ 1000                          	
+ 1001                          	;--------------------------------------------
+ 1002                          	; STATUSABFRAGE DER SERIELLEN SCHNITTSTELLE
+ 1003                          	;--------------------------------------------
+ 1004                          	
+ 1005   E5E7   BD E9 99        	STATUS: JSR	NORES
+ 1006   E5EA   B6 9F 28        		LDAA	SYSFLG		;B7=RDRF
+ 1007   E5ED   37              		PSHB
+ 1008   E5EE   F6 10 2E        		LDAB	SCSR		;AKTUELLES TX-BIT HOLEN
+ 1009   E5F1   C4 80           		ANDB	#%10000000
+ 1010   E5F3   1B              		ABA
+ 1011   E5F4   84 A8           		ANDA	#%10101000	;BIT 0 - BIT 4 LOESCHEN
+ 1012   E5F6   33              		PULB
+ 1013   E5F7   39              		RTS
+ 1014                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page   19
+
+
+
+
+ 1015                          	;-------------------
+ 1016                          	; TERMINALEINGABE
+ 1017                          	;-------------------
+ 1018                          	
+ 1019   E5F8   BD E9 99        	READ:	JSR	NORES
+ 1020   E5FB   8D EA           		BSR	STATUS		;ZEICHEN EMPFANGEN ?
+ 1021   E5FD   48              		LSLA
+ 1022   E5FE   48              		LSLA
+ 1023   E5FF   2A F7           		BPL	READ		;NEIN...
+ 1024   E601   0F              		SEI			;JA:   SPERRE INTERRUPT
+ 1025   E602   B6 9F 28        		LDAA	SYSFLG
+ 1026   E605   84 D7           		ANDA	#%11010111	;RDRF UND ORFE LOESCHEN
+ 1027   E607   B7 9F 28        		STAA	SYSFLG
+ 1028   E60A   B6 9F 25        		LDAA	RXDATA		;DB-ZEICHEN LADEN
+ 1029   E60D   0E              		CLI			;INTERRUPTS WIEDER FREIGEBEN
+ 1030   E60E   84 7F           		ANDA	#$7F		;PARITY-BIT ABTRENNEN
+ 1031   E610   39              		RTS
+ 1032                          	
+ 1033                          	;------------------------------------------
+ 1034                          	; TERMINALAUSGABE (MIT XON/XOFF HANDSHAKE)
+ 1035                          	;------------------------------------------
+ 1036                          	
+ 1037   E611   BD E9 99        	WRITE:	JSR	NORES
+ 1038   E614   36              		PSHA			;ZEICHEN RETTEN
+ 1039   E615   B6 10 2E        	WR1:	LDAA	SCSR
+ 1040   E618   84 80           		ANDA	#%10000000	;TX SENDEBEREIT ?
+ 1041   E61A   27 F9           		BEQ	WR1		;NEIN...
+ 1042   E61C   8D C9           		BSR	STATUS		;ZEICHEN EMPFANGEN ?
+ 1043   E61E   48              		LSLA
+ 1044   E61F   48              		LSLA
+ 1045   E620   2A 12           		BPL	WR2		;NEIN...
+ 1046   E622   8D D4           		BSR	READ
+ 1047   E624   81 13           		CMPA	#CTRLS		;AUSGABE ANHALTEN ?
+ 1048   E626   26 0C           		BNE	WR2		;NEIN...
+ 1049   E628   8D BD           	WR3:	BSR	STATUS		;JA: AUF CTRL/Q WARTEN
+ 1050   E62A   48              		LSLA
+ 1051   E62B   48              		LSLA
+ 1052   E62C   2A FA           		BPL	WR3
+ 1053   E62E   8D C8           		BSR	READ
+ 1054   E630   81 11           		CMPA	#CTRLQ		;AUSGABE WEITERLAUFEN LASSEN ?
+ 1055   E632   26 F4           		BNE	WR3		;NEIN...
+ 1056   E634   32              	WR2:	PULA
+ 1057   E635   36              		PSHA
+ 1058   E636   84 7F           		ANDA	#$7F		;NUR 7 BIT DB SENDEN !
+ 1059   E638   B7 10 2F        		STAA	SCDR		;DB-ZEICHEN SENDEN
+ 1060   E63B   32              		PULA			;ORIGINALZEICHEN LADEN
+ 1061   E63C   39              		RTS
+ 1062                          	
+ 1063                          	;-----------------------------
+ 1064                          	; TERMINAL EIN-UND AUSGABE
+ 1065                          	;-----------------------------
+ 1066                          	
+ 1067   E63D   8D B9           	ECHO:	BSR	READ		;ZEICHEN LESEN
+ 1068   E63F   81 61           		CMPA	#'a'		;KLEINBUCHSTABEN EINGEGEBEN ?
+ 1069   E641   25 CE           		BCS	WRITE		;NEIN: ZEICHEN AUSGEBEN
+ 1070   E643   81 7A           		CMPA	#'z'		;SONDERZEICHEN ?
+ 1071   E645   22 CA           		BHI	WRITE		;JA:	 ZEICHEN AUSGEBEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   20
+
+
+
+
+ 1072   E647   84 5F           		ANDA	#%01011111	;NEIN: UMWANDLUNG IN GROSSBUCHSTABEN
+ 1073   E649   20 C6           		BRA	WRITE		;ZEICHEN AUSGEBEN
+ 1074                          	
+ 1075                          	;--------------------------------------
+ 1076                          	; AUSGABE VON ZWISCHENRAEUMEN (SPACE)
+ 1077                          	;--------------------------------------
+ 1078                          	
+ 1079   E64B   8D 00           	OUTDS:	BSR	OUTS
+ 1080   E64D   86 20           	OUTS:	LDAA	#$20
+ 1081   E64F   20 C0           		BRA	WRITE
+ 1082                          	
+ 1083                          	;--------------------------------
+ 1084                          	; AUSGABE VON BINDESTRICHEN (-)
+ 1085                          	;--------------------------------
+ 1086                          	
+ 1087   E651   8D 00           	OUTDM:	BSR	OUTM
+ 1088   E653   86 2D           	OUTM:	LDAA	#'-'
+ 1089   E655   20 BA           		BRA	WRITE
+ 1090                          	
+ 1091                          	;-------------------------------
+ 1092                          	; NEUE ZEILE ANFANGEN (CR, LF)
+ 1093                          	;-------------------------------
+ 1094                          	
+ 1095   E657   36              	OUTCL:	PSHA			;AKKU NICHT ZERSTOEREN!
+ 1096   E658   86 0D           		LDAA	#$D		;WAGENRUECKLAUF
+ 1097   E65A   8D B5           		BSR	WRITE
+ 1098   E65C   86 0A           		LDAA	#$A		;ZEILENTRANSPORT
+ 1099   E65E   8D B1           		BSR	WRITE
+ 1100   E660   32              		PULA
+ 1101   E661   39              		RTS
+ 1102                          	
+ 1103                          	;--------------------------------------
+ 1104                          	; EIN ODER ZWEI TRENNZEICHEN AUSGEBEN
+ 1105                          	;--------------------------------------
+ 1106                          	
+ 1107   E662   37              	TRENNZ:	PSHB
+ 1108   E663   36              		PSHA
+ 1109   E664   3C              		PSHX
+ 1110   E665   8F              		XGDX
+ 1111   E666   C4 0F           		ANDB	#$F		;UNTERES HALBBYTE ABTRENNEN
+ 1112   E668   C1 08           		CMPB	#$8		;MITTE IN DER ZEILE SCHON ERREICHT ?
+ 1113   E66A   26 02           		BNE	TRENNO		;NEIN: 1 SPACE AUSGEBEN
+ 1114   E66C   8D DF           		BSR	OUTS		;JA:   2 SPACE AUSGEBEN
+ 1115   E66E   8D DD           	TRENNO:	BSR	OUTS
+ 1116   E670   38              		PULX
+ 1117   E671   32              		PULA
+ 1118   E672   33              		PULB
+ 1119   E673   39              		RTS
+ 1120                          	
+ 1121                          	;---------------------------------------------------
+ 1122                          	; AUSGABE EINES STRINGS, INDIZIERT DURCH X-REGISTER
+ 1123                          	;---------------------------------------------------
+ 1124                          	
+ 1125   E674   A6 00           	OUTSTR: LDAA	,X		;INDIZIERTES BYTE LADEN
+ 1126   E676   27 0A           		BEQ	OUTEND
+ 1127   E678   81 80           		CMPA	#$80
+ 1128   E67A   27 DB           		BEQ	OUTCL		;NEGATIVES ENDEZEICHEN = CRLF
+  Sun Mar 15 2026 13:59                                                                                                  Page   21
+
+
+
+
+ 1129   E67C   8D 93           		BSR	WRITE		;ZEICHEN AUSGEBEN
+ 1130   E67E   08              		INX			;ADRESSE ERHOEHEN
+ 1131   E67F   4D              		TSTA
+ 1132   E680   2A F2           		BPL	OUTSTR
+ 1133   E682   39              	OUTEND:	RTS
+ 1134                          	
+ 1135                          	;----------------
+ 1136                          	; GEBE BYTE AUS
+ 1137                          	;----------------
+ 1138                          	
+ 1139   E683   FF 9F 1B        	OUTX:	STX	IOWH		;GEBE X-REGISTER AUS
+ 1140   E686   CE 9F 1B        	OUTXHI:	LDX	#IOWH		;GEBE INHALT VON "IOWH" AUS
+ 1141   E689   8D 00           	OUT4H:	BSR	OUT2H		;GEBE ADRESSIERTES WORT AUS
+ 1142   E68B   A6 00           	OUT2H:	LDAA	,X		;GEBE ADRESSIERTES BYTE AUS
+ 1143   E68D   08              		INX
+ 1144   E68E   36              	OUT2HA:	PSHA			;GEBE BYTE IM AKKU AUS
+ 1145   E68F   8D 09           		BSR	BUILDL		;OUT LEFT HEX CHARACTER
+ 1146   E691   BD E6 11        		JSR	WRITE
+ 1147   E694   32              		PULA
+ 1148   E695   8D 07           		BSR	BUILDR		;OUT RIGHT HEX CHARACTER
+ 1149   E697   7E E6 11        		JMP	WRITE
+ 1150                          	
+ 1151                          	;-----------------------------
+ 1152                          	; AUSGABE DES BYTES IM A-REG
+ 1153                          	;-----------------------------
+ 1154                          	
+ 1155   E69A   44              	BUILDL:	LSRA			;LINKES NIBBLE
+ 1156   E69B   44              		LSRA			;    EINES
+ 1157   E69C   44              		LSRA			;    BYTES
+ 1158   E69D   44              		LSRA			;    ERZEUGEN
+ 1159   E69E   84 0F           	BUILDR:	ANDA	#$F		;RECHTES NIBBLE HERAUSTRENNEN
+ 1160   E6A0   8B 30           		ADDA	#'0'		;DB-ZEICHEN ERZEUGEN
+ 1161   E6A2   81 39           		CMPA	#'9'		;ZEICHEN GROESSER ALS DB 9 ?
+ 1162   E6A4   23 02           		BLS	BUILD		;NEIN, KEINE KORREKTUR NOETIG
+ 1163   E6A6   8B 07           		ADDA	#7		;PSEUDOTETRADEN ERZEUGEN (A-F)
+ 1164   E6A8   39              	BUILD:	RTS
+ 1165                          	
+ 1166                          	;------------------------------------------------
+ 1167                          	; LESE EINE HEX-ZIFFER, KENNZEICHNE FEHLZEICHEN
+ 1168                          	;------------------------------------------------
+ 1169                          	
+ 1170   E6A9   BD E6 3D        	INPHX:	JSR	ECHO
+ 1171   E6AC   16              		TAB			;RETTE ZEICHEN FUER VERGLEICH
+ 1172   E6AD   81 30           		CMPA	#'0'
+ 1173   E6AF   2D 10           		BLT	INERR		;KEIN HEX
+ 1174   E6B1   81 39           		CMPA	#'9'
+ 1175   E6B3   2F 0A           		BLE	IN1HG
+ 1176   E6B5   81 41           		CMPA	#'A'
+ 1177   E6B7   2D 08           		BLT	INERR		;KEIN HEX
+ 1178   E6B9   81 46           		CMPA	#'F'
+ 1179   E6BB   2E 04           		BGT	INERR		;KEIN HEX
+ 1180   E6BD   80 07           		SUBA	#7
+ 1181   E6BF   0C              	IN1HG:	CLC			;CY=0 --> KEIN ERROR
+ 1182   E6C0   39              		RTS
+ 1183                          	
+ 1184   E6C1   0D              	INERR:	SEC			;CY=1 --> ERROR
+ 1185   E6C2   39              		RTS
+  Sun Mar 15 2026 13:59                                                                                                  Page   22
+
+
+
+
+ 1186                          	
+ 1187                          	;-----------------------------------
+ 1188                          	; EINLESEN EINES BYTES IN DEN AKKU
+ 1189                          	;-----------------------------------
+ 1190                          	
+ 1191   E6C3   8D E4           	INP2HA:	BSR	INPHX		;EIN HALBBYTE LESEN
+ 1192   E6C5   25 16           		BCS	NBYTE2		;EINGABEFEHLER...
+ 1193   E6C7   48              		ASLA
+ 1194   E6C8   48              		ASLA
+ 1195   E6C9   48              		ASLA
+ 1196   E6CA   48              		ASLA
+ 1197   E6CB   36              		PSHA			;1. TEIL RETTEN
+ 1198   E6CC   8D DB           		BSR	INPHX		;EIN HALBBYTE LESEN
+ 1199   E6CE   25 0C           		BCS	NBYTE1		;EINGABEFEHLER...
+ 1200   E6D0   84 0F           		ANDA	#$F
+ 1201   E6D2   33              		PULB
+ 1202   E6D3   1B              		ABA			;HEXBYTE ERZEUGEN
+ 1203   E6D4   36              		PSHA			;BYTE RETTEN
+ 1204   E6D5   BB 9F 26        		ADDA	CKSUM		;BYTE ZUR PRUEFSUMME ADDIEREN
+ 1205   E6D8   B7 9F 26        		STAA	CKSUM		;  UND ABSPEICHERN
+ 1206   E6DB   0C              		CLC			;FEHLERFLAG LOESCHEN
+ 1207   E6DC   32              	NBYTE1:	PULA			;BYTE WIEDER LADEN
+ 1208   E6DD   39              	NBYTE2:	RTS
+ 1209                          	
+ 1210                          	;---------------------------------------
+ 1211                          	; EINLESEN EINES WORTES INS X-REGISTER
+ 1212                          	;---------------------------------------
+ 1213                          	
+ 1214   E6DE   8D E3           	INP4HX:	BSR	INP2HA		;ERSTES BYTE EINLESEN
+ 1215   E6E0   25 0E           		BCS	NADDR		;EINGABEFEHLER...
+ 1216   E6E2   B7 9F 1B        	INPS4X:	STAA	IOWH
+ 1217   E6E5   8D DC           		BSR	INP2HA
+ 1218   E6E7   25 07           		BCS	NADDR		;EINGABEFEHLER...
+ 1219   E6E9   B7 9F 1C        		STAA	IOWL
+ 1220   E6EC   FE 9F 1B        		LDX	IOWH		;16 BIT WERT IM X-REGISTER
+ 1221   E6EF   0C              		CLC
+ 1222   E6F0   39              	NADDR:	RTS
+ 1223                          	
+ 1224                          	;------------------------------------------
+ 1225                          	; SETZE BYTE-OPERATION (OEFFNEN/SPEICHERN)
+ 1226                          	;------------------------------------------
+ 1227                          	
+ 1228   E6F1   0F              	SETBYT:	SEI
+ 1229   E6F2   B6 9F 28        		LDAA	SYSFLG
+ 1230   E6F5   84 FB           		ANDA	#%11111011	;BYTE-OPERATION EINSTELLEN
+ 1231   E6F7   B7 9F 28        		STAA	SYSFLG
+ 1232   E6FA   0E              		CLI
+ 1233   E6FB   39              		RTS
+ 1234                          	
+ 1235                          	;------------------------------------------
+ 1236                          	; SETZE WORT-OPERATION (OEFFNEN/SPEICHERN)
+ 1237                          	;------------------------------------------
+ 1238                          	
+ 1239   E6FC   0F              	SETWOR:	SEI
+ 1240   E6FD   B6 9F 28        		LDAA	SYSFLG
+ 1241   E700   8A 04           		ORAA	#%00000100	;WORT-OPERATION EINSTELLEN
+ 1242   E702   B7 9F 28        		STAA	SYSFLG
+  Sun Mar 15 2026 13:59                                                                                                  Page   23
+
+
+
+
+ 1243   E705   0E              		CLI
+ 1244   E706   39              		RTS
+ 1245                          	
+ 1246                          	;-----------------------------------
+ 1247                          	; TEXTEINGABE AB AKTUELLER ADRESSE
+ 1248                          	;-----------------------------------
+ 1249                          	
+ 1250   E707   CE EF 32        	TXTINP:	LDX	#TXTMSG
+ 1251   E70A   BD E6 74        		JSR	OUTSTR
+ 1252   E70D   BD E9 89        		JSR	CTRCOF		;CTRL/C SPERREN
+ 1253   E710   BD E5 F8        	TXTIN:	JSR	READ		;DB-ZEICHEN HOLEN
+ 1254   E713   81 03           		CMPA	#CTRLC		;ABBRUCH ?
+ 1255   E715   26 03           		BNE	TXTCHK		;NEIN...
+ 1256   E717   7E E7 C5        		JMP	SAMEAD		;JA:	 LETZTE ADRESSE OEFFNEN
+ 1257                          	
+ 1258   E71A   81 7F           	TXTCHK:	CMPA	#DELETE		;LETZTES ZEICHEN LOESCHEN ?
+ 1259   E71C   26 0F           		BNE	TXTOUT
+ 1260   E71E   FE 9F 21        		LDX	ZHI
+ 1261   E721   09              		DEX			;AKTUELLE ADRESSE VERMINDERN
+ 1262   E722   FF 9F 21        		STX	ZHI
+ 1263   E725   CE EF B4        		LDX	#DELTXT		;<BS><SPACE><BS> AUSGEBEN
+ 1264   E728   BD E6 74        		JSR	OUTSTR
+ 1265   E72B   20 E3           		BRA	TXTIN
+ 1266                          	
+ 1267   E72D   BD E6 11        	TXTOUT:	JSR	WRITE		;UND ECHO AUSGEBEN
+ 1268   E730   FE 9F 21        		LDX	ZHI		;AKTUELLE ADRESSE LADEN
+ 1269   E733   A7 00           		STAA	,X		;UND ZEICHEN SPEICHERN
+ 1270   E735   A1 00           		CMPA	,X		;MEMORY OK ?
+ 1271   E737   27 08           		BEQ	TXTOK		;JA...
+ 1272   E739   31              		INS			;RUECKSPRUNGSADRESSE VOM
+ 1273   E73A   31              		INS			;STACK ENTFERNEN
+ 1274   E73B   BD E9 79        		JSR	CTRCON		;CTRL/C WIEDER FREIGEBEN
+ 1275   E73E   7E E4 D0        		JMP	MEMERR		;FEHLER MELDEN
+ 1276                          	
+ 1277   E741   08              	TXTOK:	INX
+ 1278   E742   FF 9F 21        		STX	ZHI
+ 1279   E745   20 C9           		BRA	TXTIN
+ 1280                          	
+ 1281                          	;----------------------
+ 1282                          	; NEUE ADRESSE OEFFNEN
+ 1283                          	;----------------------
+ 1284                          	
+ 1285   E747   CE EE FE        	NEWADR:	LDX	#TXTMEM
+ 1286   E74A   BD E6 74        		JSR	OUTSTR
+ 1287   E74D   BD E6 DE        		JSR	INP4HX		;MEMORY-ADRESSE HOLEN
+ 1288   E750   25 05           		BCS	NEWA99		;NEUES KOMMANDO EINGEGEBEN...
+ 1289   E752   FF 9F 21        		STX	ZHI		;NEUE ADRESSE SPEICHERN
+ 1290   E755   20 6E           		BRA	SAMEAD
+ 1291                          	
+ 1292   E757   39              	NEWA99:	RTS
+ 1293                          	
+ 1294                          	;----------------------------
+ 1295                          	; ADRESSE INDIREKT OEFFNEN
+ 1296                          	;----------------------------
+ 1297                          	
+ 1298   E758   FE 9F 21        	INDIAD:	LDX	ZHI		;AKTUELLE ADRESSE LADEN
+ 1299   E75B   FF 9F 23        		STX	SCRATW		; UND RETTEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   24
+
+
+
+
+ 1300   E75E   EE 00           		LDX	,X		; UND DANN INDIREKT OEFFNEN
+ 1301   E760   FF 9F 21        		STX	ZHI
+ 1302   E763   20 60           		BRA	SAMEAD
+ 1303                          	
+ 1304                          	;-------------------------------------
+ 1305                          	; LETZTE GEOEFFNETE ADRESSE OEFFNEN
+ 1306                          	;-------------------------------------
+ 1307                          	
+ 1308   E765   FE 9F 23        	RESTOR:	LDX	SCRATW		;LETZTE ADRESSE LADEN
+ 1309   E768   FF 9F 21        		STX	ZHI
+ 1310   E76B   20 58           		BRA	SAMEAD
+ 1311                          	
+ 1312                          	;------------------------------------------------
+ 1313                          	; 8-BIT OFFSET BERECHNEN UND ERGEBNIS SPEICHERN
+ 1314                          	;------------------------------------------------
+ 1315                          	
+ 1316   E76D   BD E6 DE        	OFFSET:	JSR	INP4HX		;ZIELADRESSE HOLEN
+ 1317   E770   25 27           		BCS	OFFS99		;NEUES KOMMANDO EINGEGEBEN...
+ 1318   E772   09              		DEX			;ADRESSENKORREKTUR
+ 1319   E773   8F              		XGDX			;EINGEGEBENE ADRESSE
+ 1320   E774   B3 9F 21        		SUBD	ZHI		;AKTUELLE ADRESSE ABZIEHEN
+ 1321   E777   2A 12           		BPL	OTST2		;POSITIV...
+ 1322   E779   83 FF 80        		SUBD	#$FF80		;KLEINER?
+ 1323   E77C   25 05           		BCS	OFSER		;JA...
+ 1324   E77E   C3 FF 80        		ADDD	#$FF80
+ 1325   E781   20 10           		BRA	OFSOK
+ 1326                          	
+ 1327   E783   CE EF E5        	OFSER:	LDX	#OFSERR
+ 1328   E786   BD E6 74        		JSR	OUTSTR
+ 1329   E789   20 3A           		BRA	SAMEAD
+ 1330                          	
+ 1331   E78B   83 00 80        	OTST2:	SUBD	#$0080		;GROESSER ODER GLEICH?
+ 1332   E78E   24 F3           		BCC	OFSER		;JA...
+ 1333   E790   C3 00 80        		ADDD	#$0080
+ 1334   E793   31              	OFSOK:	INS			;RUECKSPRUNGADRESSE AUS
+ 1335   E794   31              		INS			;DEM STACK ENTFERNEN
+ 1336   E795   17              		TBA			;8-BIT OFFSET MUSS IM A-AKKU STEHEN
+ 1337   E796   7E E4 C7        		JMP	STOB
+ 1338                          	
+ 1339   E799   39              	OFFS99:	RTS
+ 1340                          	
+ 1341                          	;------------------------------------
+ 1342                          	; ADRESSE MIT 8-BIT RELATIV OEFFNEN
+ 1343                          	;------------------------------------
+ 1344                          	
+ 1345   E79A   FE 9F 21        	RELBYT:	LDX	ZHI
+ 1346   E79D   FF 9F 23        		STX	SCRATW		;LETZTE ADRESSE MERKEN
+ 1347   E7A0   4F              		CLRA			;POSITIVEN OFFSET VOREINSTELLEN
+ 1348   E7A1   E6 00           		LDAB	,X		;ADRESSIERTES BYTE LADEN
+ 1349   E7A3   2A 01           		BPL	CMPOFS
+ 1350   E7A5   4A              		DECA			;HIGHER BYTE AUF $FF SETZEN
+ 1351   E7A6   FF 9F 21        	CMPOFS:	STX	ZHI
+ 1352   E7A9   F3 9F 21        		ADDD	ZHI		;JETZT HABEN WIR DIE NEUE ADRESSE
+ 1353   E7AC   FD 9F 21        		STD	ZHI
+ 1354                          	
+ 1355                          	;------------------------------------------------
+ 1356                          	; NAECHSTE, LETZTE ODER GLEICHE ADRESSE OEFFNEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   25
+
+
+
+
+ 1357                          	;------------------------------------------------
+ 1358                          	
+ 1359   E7AF   FE 9F 21        	NEXTAD:	LDX	ZHI		;AKTUELLE ADRESSE LADEN
+ 1360   E7B2   08              		INX
+ 1361   E7B3   08              		INX
+ 1362   E7B4   FF 9F 21        		STX	ZHI
+ 1363   E7B7   B6 9F 28        		LDAA	SYSFLG		;WORT ADRESSIERT ?
+ 1364   E7BA   85 04           		BITA	#%00000100
+ 1365   E7BC   26 07           		BNE	SAMEAD		;JA: ADR = ADR + 2
+ 1366   E7BE   FE 9F 21        	LASTAD:	LDX	ZHI		;AKTUELLE ADRESSE LADEN
+ 1367   E7C1   09              		DEX
+ 1368   E7C2   FF 9F 21        		STX	ZHI
+ 1369   E7C5   BD E6 57        	SAMEAD:	JSR	OUTCL		;NEUE ZEILE ANFANGEN
+ 1370   E7C8   BD E6 F1        		JSR	SETBYT		;MARKIERE NAECHSTE OPERATION ALS BYTE
+ 1371   E7CB   FE 9F 21        		LDX	ZHI
+ 1372   E7CE   8C 9F 09        		CPX	#SPH		;MOMENTANE ADRESSE = USER-SP ?
+ 1373   E7D1   26 0B           		BNE	TRYCPU		;NEIN...
+ 1374   E7D3   FF 9F 1D        		STX	XHI
+ 1375   E7D6   CE FA AA        		LDX	#SPREG		;LADE STRING-ADRESSE DES SP
+ 1376   E7D9   FF 9F 1F        		STX	YHI
+ 1377   E7DC   20 36           		BRA	OPENRG
+ 1378                          	
+ 1379   E7DE   FC 9F 09        	TRYCPU:	LDD	SPH		;USER STACKPOINTER LADEN
+ 1380   E7E1   83 00 08        		SUBD	#8		;AUF USER-F
+ 1381   E7E4   FD 9F 1D        		STD	XHI		;UND ADRESSE RETTEN
+ 1382   E7E7   FC 9F 21        		LDD	ZHI		;[MOMENTANE ADRESSE]
+ 1383   E7EA   B3 9F 1D        		SUBD	XHI		;  - [USER-REG-ADRESSE]
+ 1384   E7ED   25 36           		BCS	OPENAD		;MOMENTANE ADRESSE IST KLEINER
+ 1385   E7EF   4D              		TSTA
+ 1386   E7F0   26 33           		BNE	OPENAD		;MOMENTANE ADRESSE IST GROESSER
+ 1387   E7F2   C1 08           		CMPB	#8
+ 1388   E7F4   22 2F           		BHI	OPENAD		;MOMENTANE ADRESSE IST GROESSER
+ 1389   E7F6   CE FA 9B        		LDX	#FREG		;ADRESSE DER REGISTERLISTE
+ 1390   E7F9   17              		TBA			;OFFSET IN AKKU A RETTEN
+ 1391   E7FA   5F              		CLRB
+ 1392   E7FB   FF 9F 1F        	NAMEF:	STX	YHI
+ 1393   E7FE   FE 9F 1D        		LDX	XHI
+ 1394   E801   3A              		ABX			;AUF NAECHSTE USER-REG-ADRESSE ZEIGEN
+ 1395   E802   FF 9F 1D        		STX	XHI
+ 1396   E805   FE 9F 1F        		LDX	YHI		;STRINGPOSITION LADEN
+ 1397   E808   08              	OPENR:	INX
+ 1398   E809   6D 00           		TST	,X		;POSITIV ?
+ 1399   E80B   2A FB           		BPL	OPENR		;JA:	 ENDE SUCHEN...
+ 1400   E80D   08              		INX			;X ZEIGT AUF REGISTERGROESSE
+ 1401   E80E   E6 00           		LDAB	,X		;REGISTERGROESSE IN BYTE LADEN
+ 1402   E810   08              		INX			;X ZEIGT AUF 1. REGISTERBUCHSTABEN
+ 1403   E811   10              		SBA
+ 1404   E812   2A E7           		BPL	NAMEF		;SUCHE, BIS OFFSET<0 WIRD
+ 1405   E814   FE 9F 1D        	OPENRG:	LDX	XHI		;EFFEKTIVE USER-REG-ADRESSE
+ 1406   E817   FF 9F 21        		STX	ZHI		;ALS AKTUELLE ADRESSE UEBERNEHMEN
+ 1407   E81A   BD E8 A4        		JSR	REGOUT		;REGISTER NAME & INHALT AUSGEBEN
+ 1408   E81D   5A              		DECB			;16-BIT REGISTER ?
+ 1409   E81E   27 03           		BEQ	R8BIT		;NEIN...
+ 1410   E820   BD E6 FC        		JSR	SETWOR
+ 1411   E823   0C              	R8BIT:	CLC			;KEIN BEFEHLSBUCHSTABE EINGEGEBEN !
+ 1412   E824   39              		RTS
+ 1413                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page   26
+
+
+
+
+ 1414                          	; STANDARD-AUSGABE DER ADRESSE MIT BYTE-INHALT
+ 1415                          	
+ 1416   E825   FE 9F 21        	OPENAD:	LDX	ZHI     	;AKTUELLE ADRESSE LADEN
+ 1417   E828   BD E6 83        		JSR	OUTX		; UND AUSGEBEN
+ 1418   E82B   86 3D           		LDAA	#'='		;OPEN
+ 1419   E82D   BD E0 09        		JSR	TEROUT		;INDIKATOR AUSGEBEN
+ 1420   E830   FE 9F 21        		LDX	ZHI		;ADRESSE NOCHEINMAL LADEN
+ 1421   E833   BD E6 8B        		JSR	OUT2H		;ADRESSIERTES BYTE
+ 1422   E836   BD E6 4D        		JSR	OUTS		;UND SPACE AUSGEBEN
+ 1423   E839   0C              		CLC			;KEIN BEFEHLSBUCHSTABE EINGEGEBEN !
+ 1424   E83A   39              		RTS
+ 1425                          	
+ 1426                          	;-------------------------------
+ 1427                          	; OEFFNEN EINES USER-REGISTERS
+ 1428                          	;-------------------------------
+ 1429                          	
+ 1430   E83B   CE EF 6A        	CNGREG:	LDX	#REGNAM
+ 1431   E83E   BD E6 74        		JSR	OUTSTR
+ 1432   E841   BD E6 3D        		JSR	ECHO		;REGISTER-BUCHSTABE HOLEN
+ 1433   E844   81 53           		CMPA	#'S'		;STACKPOINTER ?
+ 1434   E846   26 0E           		BNE	CNG1		;NEIN...
+ 1435   E848   CE FA AA        		LDX	#SPREG		;JA:LADE STRING-ADRESSE DES SP
+ 1436   E84B   FF 9F 1F        		STX	YHI
+ 1437   E84E   CE 9F 09        		LDX	#SPH		;AKTUELLE ADRESSE AUF USER-SP SETZEN
+ 1438   E851   FF 9F 1D        		STX	XHI
+ 1439   E854   20 3B           		BRA	FOUNDR
+ 1440                          	
+ 1441   E856   36              	CNG1:	PSHA			;EINGEGEBENEN BUCHSTABEN RETTEN
+ 1442   E857   FC 9F 09        		LDD	SPH		;USER STACKPOINTER LADEN
+ 1443   E85A   83 00 08        		SUBD	#8		;AUF USER-F
+ 1444   E85D   FD 9F 1D        		STD	XHI		;UND ADRESSE RETTEN
+ 1445   E860   CE FA 9B        		LDX	#FREG		;STRINGADRESSE
+ 1446   E863   FF 9F 1F        		STX	YHI
+ 1447   E866   32              		PULA			;EINGEGEBENEN BUCHSTABEN LADEN
+ 1448   E867   5F              		CLRB
+ 1449   E868   FE 9F 1F        	SEARRG:	LDX	YHI		;STRINGPOINTER LADEN
+ 1450   E86B   A1 00           		CMPA	,X		;REGISTERNAMEN GEFUNDEN ?
+ 1451   E86D   27 22           		BEQ	FOUNDR
+ 1452   E86F   08              	INCRP:	INX
+ 1453   E870   6D 00           		TST	,X		;ENDE DES NAMENS GEFUNDEN ?
+ 1454   E872   2A FB           		BPL	INCRP
+ 1455   E874   08              		INX			;AUF REGISTERGROESSE ZEIGEN
+ 1456   E875   E6 00           		LDAB	,X		;  UND LADEN
+ 1457   E877   08              		INX
+ 1458   E878   6D 00           		TST	,X		;ENDE DER REGISTERLISTE ?
+ 1459   E87A   2B 0C           		BMI	NOREGF		;JA, EINGABE WAR UNGUELTIG !
+ 1460   E87C   FF 9F 1F        		STX	YHI		;STRINGPOINTER RETTEN
+ 1461   E87F   FE 9F 1D        		LDX	XHI
+ 1462   E882   3A              		ABX			;AUF NAECHSTE USER-REG-ADRESSE ZEIGEN
+ 1463   E883   FF 9F 1D        		STX	XHI
+ 1464   E886   20 E0           		BRA	SEARRG
+ 1465                          	
+ 1466   E888   CE F0 1A        	NOREGF:	LDX	#CHRERR
+ 1467   E88B   BD E6 74        		JSR	OUTSTR
+ 1468   E88E   7E E7 C5        		JMP	SAMEAD		;ADRESSE/REGISTER NOCHEINMAL AUSGEBEN
+ 1469                          	
+ 1470   E891   BD E6 57        	FOUNDR:	JSR	OUTCL		;NEUE ZEILE ANFANGEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   27
+
+
+
+
+ 1471   E894   FE 9F 1D        		LDX	XHI		;ADRESSE DES USER-REGISTERS
+ 1472   E897   FF 9F 21        		STX	ZHI		;ALS AKTUELLE ADRESSE RETTEN
+ 1473   E89A   8D 08           		BSR	REGOUT
+ 1474   E89C   5A              		DECB			;16 BIT-REGISTER ?
+ 1475   E89D   27 03           		BEQ	CNG8BR		;NEIN...
+ 1476   E89F   BD E6 FC        		JSR	SETWOR
+ 1477   E8A2   0C              	CNG8BR:	CLC			;KEIN BEFEHLSBUCHSTABE EINGEGEBEN !
+ 1478   E8A3   39              		RTS
+ 1479                          	
+ 1480                          	;----------------------------------------------
+ 1481                          	; AUSGABE EINES USER-REGISTERS P/B/A/X/PC/SP
+ 1482                          	;----------------------------------------------
+ 1483                          	
+ 1484   E8A4   3C              	REGOUT:	PSHX			;ADRESSE DES USER-REGISTERS RETTEN
+ 1485   E8A5   FE 9F 1F        		LDX	YHI		;STRINGADRESSE LADEN
+ 1486   E8A8   BD E6 74        		JSR	OUTSTR		;UND REGISTERNAME AUSGEBEN
+ 1487   E8AB   E6 00           		LDAB	,X		;REGISTERGROESSE IN BYTE LADEN
+ 1488   E8AD   08              		INX			;UND STRINGADRESSE ERHOEHEN
+ 1489   E8AE   FF 9F 1F        		STX	YHI		;STRINGADRESSE RETTEN
+ 1490   E8B1   38              		PULX			;ADRESSE DES USER-REGISTERS LADEN
+ 1491   E8B2   5D              		TSTB			;AUSGABE DES SP ?
+ 1492   E8B3   26 05           		BNE	STKREG		;NEIN...
+ 1493   E8B5   CE 9F 09        		LDX	#SPH		;JA:LADE USER SP
+ 1494   E8B8   C6 02           		LDAB	#2		;UND SETZE DEN OFFSET AUF 2
+ 1495   E8BA   37              	STKREG:	PSHB			;BYTE-ZAEHLER RETTEN
+ 1496   E8BB   3C              		PSHX			;REGISTERADRESSE RETTEN
+ 1497   E8BC   BD E6 8B        	REGBYT:	JSR	OUT2H		;BYTE AUSGEBEN
+ 1498   E8BF   5A              		DECB			;FERTIG ?
+ 1499   E8C0   26 FA           		BNE	REGBYT		;NEIN
+ 1500   E8C2   BD E6 4D        		JSR	OUTS		;SPACE AUSGEBEN
+ 1501   E8C5   38              		PULX			;REGISTERADRESSE ZURUECKLADEN
+ 1502   E8C6   33              		PULB			;BYTECOUNT LADEN
+ 1503   E8C7   39              		RTS
+ 1504                          	
+ 1505                          	;-------------------------------------------------------------------
+ 1506                          	; X-REGISTER ZEIGT AUF OPCODE. BERECHNE BYTEANZAHL DES OPCODES IN B.
+ 1507                          	;-------------------------------------------------------------------
+ 1508                          	
+ 1509   E8C8   36              	DISASM:	PSHA			;ADRESSE RETTEN
+ 1510   E8C9   18 3C           		PSHY
+ 1511   E8CB   3C              		PSHX
+ 1512   E8CC   18 CE 00 00     		LDY	#$0000
+ 1513   E8D0   A6 00           		LDAA	,X		;OPCODE HOLEN
+ 1514   E8D2   81 18           		CMPA	#$18
+ 1515   E8D4   27 3D           		BEQ	P2
+ 1516   E8D6   81 1A           		CMPA	#$1A
+ 1517   E8D8   27 51           		BEQ	P3
+ 1518   E8DA   81 CD           		CMPA	#$CD
+ 1519   E8DC   27 56           		BEQ	P4
+ 1520   E8DE   3C              		PSHX
+ 1521   E8DF   16              	SUCHEN:	TAB
+ 1522   E8E0   84 03           		ANDA	#$3		;UNTERE BITS = OFFSET IM CODEBYTE
+ 1523   E8E2   54              		LSRB
+ 1524   E8E3   54              		LSRB
+ 1525   E8E4   CE F1 14        		LDX	#CODTAB		;ANFANG DER OPCODELAENGENTABELLE
+ 1526   E8E7   3A              		ABX			;CODEOFFSET ADDIEREN
+ 1527   E8E8   E6 00           		LDAB	0,X		;CODEBYTE HOLEN
+  Sun Mar 15 2026 13:59                                                                                                  Page   28
+
+
+
+
+ 1528   E8EA   4D              	DISTST:	TSTA
+ 1529   E8EB   27 05           		BEQ	DISEND
+ 1530   E8ED   54              		LSRB			;NAECHSTE CODEBITS IN BITPOSITION
+ 1531   E8EE   54              		LSRB			;1/0 VON AKKU-B SCHIEBEN
+ 1532   E8EF   4A              		DECA			;OFFSET IM CODEBYTE ABGEARBEITET ?
+ 1533   E8F0   20 F8           		BRA	DISTST
+ 1534                          	
+ 1535   E8F2   C4 03           	DISEND:	ANDB	#3		;UNTERE BITS = CODELAENGE (0,1,2,3 BYTE)
+ 1536   E8F4   38              		PULX
+ 1537   E8F5   A6 00           		LDAA	,X
+ 1538   E8F7   81 12           		CMPA	#$12
+ 1539   E8F9   27 15           		BEQ	PLUS1
+ 1540   E8FB   81 13           		CMPA	#$13
+ 1541   E8FD   27 11           		BEQ	PLUS1
+ 1542   E8FF   81 1E           		CMPA	#$1E
+ 1543   E901   27 0D           		BEQ	PLUS1
+ 1544   E903   81 1F           		CMPA	#$1F
+ 1545   E905   27 09           		BEQ	PLUS1
+ 1546   E907   18 3A           	AENDE:	ABY
+ 1547   E909   18 8F           		XGDY
+ 1548   E90B   38              		PULX
+ 1549   E90C   18 38           		PULY
+ 1550   E90E   32              		PULA			;ALTE ADRESSE WIEDER HOLEN
+ 1551   E90F   39              		RTS
+ 1552   E910   5C              	PLUS1:	INCB
+ 1553   E911   20 F4           		BRA	AENDE
+ 1554                          	
+ 1555   E913   08              	P2:	INX
+ 1556   E914   A6 00           		LDAA	,X
+ 1557   E916   18 CE F0 C5     		LDY	#TPAGE2-1
+ 1558                          	
+ 1559   E91A   18 08           	WEITER:	INY
+ 1560   E91C   18 E6 00        		LDAB	,Y
+ 1561   E91F   27 1C           		BEQ	SENDE		;ENDE DER SUCHE
+ 1562   E921   11              		CBA
+ 1563   E922   26 F6           		BNE	WEITER
+ 1564   E924   18 CE 00 01     		LDY	#$0001
+ 1565   E928   3C              		PSHX
+ 1566   E929   20 B4           		BRA	SUCHEN
+ 1567                          	
+ 1568   E92B   08              	P3:	INX
+ 1569   E92C   A6 00           		LDAA	,X
+ 1570   E92E   18 CE F1 06     		LDY	#TPAGE3-1
+ 1571   E932   20 E6           		BRA	WEITER
+ 1572                          	
+ 1573   E934   08              	P4:	INX
+ 1574   E935   A6 00           		LDAA	,X
+ 1575   E937   18 CE F1 0E     		LDY	#TPAGE4-1
+ 1576   E93B   20 DD           		BRA	WEITER
+ 1577                          	
+ 1578   E93D   18 CE 00 00     	SENDE:	LDY	#$0000
+ 1579   E941   5F              		CLRB
+ 1580   E942   20 C3           		BRA	AENDE
+ 1581                          	
+ 1582                          	
+ 1583                          	;--------------------------------------------------------------
+ 1584                          	; AUSGABE EINER ZEILE MIT REGISTERINHALTEN UND NAECHSTEN OPCODE
+  Sun Mar 15 2026 13:59                                                                                                  Page   29
+
+
+
+
+ 1585                          	;--------------------------------------------------------------
+ 1586                          	
+ 1587   E944   3C              	PSOPC:	PSHX			;ALTES X-REGISTER RETTEN
+ 1588   E945   BD E5 14        		JSR	USRREG		;ALLE USER-REGISTER ANZEIGEN
+ 1589   E948   FE 9F 09        		LDX	SPH
+ 1590   E94B   09              		DEX			;AUF USER-PCL ZEIGEN
+ 1591   E94C   EE 00           		LDX	,X		;USER-PC LADEN
+ 1592   E94E   BD E8 C8        		JSR	DISASM		;NAECHSTEN OPCODE DISASSEMBLIEREN
+ 1593   E951   37              		PSHB			;CODELAENGE RETTEN
+ 1594   E952   3C              		PSHX			;ADRESSE RETTEN
+ 1595   E953   BD E6 4D        		JSR	OUTS
+ 1596   E956   5D              		TSTB			;UNGUELTIGER OPCODE ?
+ 1597   E957   26 0D           		BNE	OPOK		;NEIN
+ 1598   E959   38              		PULX			;ADRESSE WIEDER HOLEN
+ 1599   E95A   BD E6 8B        		JSR	OUT2H		;	UND OPCODE AUSGEBEN
+ 1600   E95D   CE F0 C3        		LDX	#ERRBEL
+ 1601   E960   BD E0 0F        		JSR	PRINT		;"?" + BELL
+ 1602   E963   7E E1 32        		JMP	CONTRL		;IN DIE KOMMANDOSCHLEIFE ZURUECK...
+ 1603                          	
+ 1604   E966   38              	OPOK:	PULX			;STACK AUFRAEUMEN !
+ 1605   E967   33              		PULB			;CODELAENGE WIEDER HOLEN
+ 1606   E968   37              		PSHB
+ 1607   E969   A6 00           		LDAA	,X		;OPCODE LADEN
+ 1608   E96B   36              		PSHA			;   UND ZUNAECHST RETTEN
+ 1609   E96C   BD E6 8B        	OPNXT:	JSR	OUT2H
+ 1610   E96F   BD E6 4D        		JSR	OUTS
+ 1611   E972   5A              		DECB			;AUSGABE ALLER BYTES FERIG ?
+ 1612   E973   26 F7           		BNE	OPNXT
+ 1613   E975   32              		PULA			;NAECHSTER OPCODE IM PROGRAMM
+ 1614   E976   33              		PULB			;CODELAENGE WIEDER HOELEN
+ 1615   E977   38              		PULX			;ALTES X-REGISTER WIEDER LADEN
+ 1616   E978   39              		RTS
+ 1617                          	
+ 1618                          	;-----------------------------
+ 1619                          	; CTRL/C + CTRL/T EINSCHALTEN
+ 1620                          	;-----------------------------
+ 1621                          	
+ 1622   E979   36              	CTRCON:	PSHA			;A-AKKU RETTEN
+ 1623   E97A   07              		TPA
+ 1624   E97B   36              		PSHA			;ALTEN USERSTATUS RETTEN
+ 1625   E97C   0F              		SEI			;INTERRUPT SPERREN
+ 1626   E97D   B6 9F 28        		LDAA	SYSFLG
+ 1627   E980   84 BF           		ANDA	#%10111111	;CTRL/C-FLAG LOESCHEN
+ 1628   E982   B7 9F 28        		STAA	SYSFLG
+ 1629   E985   32              		PULA
+ 1630   E986   06              		TAP			;ALTES USER-STATUSREGISTER LADEN
+ 1631   E987   32              		PULA			;ALTEN USER-AKKU WIEDER LADEN
+ 1632   E988   39              		RTS
+ 1633                          	
+ 1634                          	;------------------------------
+ 1635                          	; CTRL/C + CTRL/T AUSSCHALTEN
+ 1636                          	;------------------------------
+ 1637                          	
+ 1638   E989   36              	CTRCOF:	PSHA			;A-AKKU RETTEN
+ 1639   E98A   07              		TPA
+ 1640   E98B   36              		PSHA			;ALTEN USERSTATUS RETTEN
+ 1641   E98C   0F              		SEI			;INTERRUPT SPERREN
+  Sun Mar 15 2026 13:59                                                                                                  Page   30
+
+
+
+
+ 1642   E98D   B6 9F 28        		LDAA	SYSFLG
+ 1643   E990   8A 40           		ORAA	#%01000000	;CTRL/C-FLAG SETZEN
+ 1644   E992   B7 9F 28        		STAA	SYSFLG
+ 1645   E995   32              		PULA
+ 1646   E996   06              		TAP			;ALTES USER-STATUSREGISTER LADEN
+ 1647   E997   32              		PULA			;ALTEN USER-AKKU WIEDER LADEN
+ 1648   E998   39              		RTS
+ 1649                          	
+ 1650                          	*** WATCHDOC-REST VERHINDERN ****
+ 1651                          	
+ 1652   E999   36              	NORES:	PSHA
+ 1653   E99A   86 55           		LDAA	 #$55
+ 1654   E99C   B7 10 3A        		STAA	 COPRST
+ 1655   E99F   86 AA           		LDAA	 #$AA
+ 1656   E9A1   B7 10 3A        		STAA	 COPRST
+ 1657   E9A4   32              		PULA
+ 1658   E9A5   39              		RTS
+ 1659                          	
+ 1660   E9A6   CE E9 AD        	UNIRQ:	LDX	#IRQTXT
+ 1661   E9A9   BD E6 74        		JSR	OUTSTR
+ 1662   E9AC   3B              		RTI
+ 1663                          	
+ 1664   E9AD   0D 0A 55 4E 44  	IRQTXT:	DB	$0D,$0A,'UNDEFINIERTER IRQ !! ',$0D,$0A,0
+        E9B2   45 46 49 4E 49 
+        E9B7   45 52 54 45 52 
+        E9BC   20 49 52 51 20 
+        E9C1   21 21 20 0D 0A 
+        E9C6   00 
+ 1665                          	
+ 1666                          	
+ 1667                          	******************************
+ 1668                          	* DISASSEMBLER FUER MC 68HC11
+ 1669                          	* MIT TABELLE
+ 1670                          	******************************
+ 1671                          	
+ 1672                          	
+ 1673                          		;BILDSCHIRM LOESCHEN
+ 1674                          	
+ 1675   E9C7   BD E6 57        	DISASS:	JSR	OUTCL	;zweimal CR und LF
+ 1676   E9CA   BD E6 57        		JSR	OUTCL
+ 1677                          	
+ 1678   E9CD   CE F9 ED        		LDX	#STRING1
+ 1679   E9D0   BD E6 74        		JSR	OUTSTR	;COPYRIGHT AUSGEBEN
+ 1680                          	
+ 1681                          		;HAUPTPROGRAMM
+ 1682                          	
+ 1683   E9D3   CE FA 32        	HAUPT:	LDX	#STRING2   ;EINGABE ANFANGSADRESSE
+ 1684   E9D6   BD E6 74        		JSR	OUTSTR
+ 1685   E9D9   0C              		CLC
+ 1686   E9DA   BD E6 DE        		JSR	INP4HX
+ 1687   E9DD   25 1C           		BCS	CHECK
+ 1688   E9DF   FF 9F 0D        		STX	STARTAD
+ 1689   E9E2   CE FA 41        		LDX	#STRING3	;EINGABE ENDADRESSE
+ 1690   E9E5   BD E6 74        		JSR	OUTSTR
+ 1691   E9E8   0C              		CLC
+ 1692   E9E9   BD E6 DE        		JSR	INP4HX
+ 1693   E9EC   25 03           		BCS	ALT_AD
+  Sun Mar 15 2026 13:59                                                                                                  Page   31
+
+
+
+
+ 1694   E9EE   FF 9F 0B        		STX	ENDAD
+ 1695   E9F1   86 0D           	ALT_AD:	LDAA	#$D	;ZEILENVORSCHUB
+ 1696   E9F3   BD E6 11        		JSR	WRITE
+ 1697   E9F6   86 0A           		LDAA	#$A
+ 1698   E9F8   BD E6 11        		JSR	WRITE
+ 1699                          	
+ 1700   E9FB   FC 9F 0B        	CHECK:	LDD	ENDAD	;ABFRAGE, OB ENDADRESSE KLEINER
+ 1701   E9FE   B3 9F 0D        		SUBD	STARTAD ;ALS ANFANGSADRESSE IST
+ 1702   EA01   23 D0           		BLS	HAUPT	;C=1 UND N=1  -> NEUE EINGABE
+ 1703                          	
+ 1704   EA03   C6 14           		LDAB	#20
+ 1705   EA05   F7 9F 0F        		STAB	ZAEHLER ;ES WIRD NACH 20 ZEILEN AUF TASTE GEWARTET
+ 1706                          	
+ 1707                          	
+ 1708                          		;*** ADRESSE AUSGEBEN ***
+ 1709   EA08   FE 9F 0D        	AD_AUS:	LDX	STARTAD
+ 1710   EA0B   BD E6 83        		JSR	OUTX		;ADRESSE AUSGEBEN
+ 1711   EA0E   86 09           		LDAA	#$09		;TAB AUSGEBEN
+ 1712   EA10   BD E6 11        		JSR	WRITE
+ 1713                          	
+ 1714                          		;*** AUSGABE BYTE(S) ***
+ 1715   EA13   BD EA 49        		JSR	BYTE_A
+ 1716                          	
+ 1717                          		;*** AUSGABE MEMNONIC ***
+ 1718   EA16                   	DISAUSG:
+ 1719   EA16   FE 9F 0D        		LDX	STARTAD
+ 1720   EA19   BD EA 69        		JSR	DIS
+ 1721   EA1C   BD E0 12        		JSR	PRCRLF		;ZEILENVORSCHUB
+ 1722                          	
+ 1723                          		;*** STARTAD AKUALLISIEREN ***
+ 1724   EA1F   BD E8 C8        		JSR	DISASM		;LAENGE OP-CODE
+ 1725   EA22   FE 9F 0D        		LDX	STARTAD
+ 1726   EA25   08              	DEC_AD:	INX
+ 1727   EA26   27 AB           		BEQ	HAUPT
+ 1728   EA28   5A              		DECB
+ 1729   EA29   2E FA           		BGT	DEC_AD
+ 1730   EA2B   FF 9F 0D        		STX	STARTAD
+ 1731   EA2E   FC 9F 0B        		LDD	ENDAD
+ 1732   EA31   B3 9F 0D        		SUBD	STARTAD
+ 1733   EA34   23 9D           		BLS	HAUPT		;NEUEINGABE
+ 1734   EA36   7A 9F 0F        		DEC	ZAEHLER
+ 1735   EA39   26 CD           		BNE	AD_AUS
+ 1736   EA3B   BD E5 F8        		JSR	READ
+ 1737   EA3E   81 1B           		CMPA	#27		;ESC, DANN NEUEINGABE
+ 1738   EA40   27 91           		BEQ	HAUPT
+ 1739   EA42   86 14           		LDAA	#20
+ 1740   EA44   B7 9F 0F        		STAA	ZAEHLER
+ 1741   EA47   20 BF           		BRA	AD_AUS
+ 1742                          	
+ 1743                          	
+ 1744                          	
+ 1745                          	
+ 1746                          		;*** AUSGABE DER EINZELNEN BYTE EINES OP-CODES ***
+ 1747                          		;*** ALS SUBROUTINE, WEIL SONST 'BRA HAUPT' IM HAUPTPROGRAMM
+ 1748                          		;    NICHT MEHR MOEGLICH ***
+ 1749                          	
+ 1750   EA49   FE 9F 0D        	BYTE_A:	LDX	STARTAD
+  Sun Mar 15 2026 13:59                                                                                                  Page   32
+
+
+
+
+ 1751   EA4C   BD E8 C8        		JSR	DISASM		;LAENGE OP-CODE
+ 1752   EA4F   37              		PSHB
+ 1753   EA50   A6 00           	NEXT_B:	LDAA	,X
+ 1754   EA52   BD E6 8E        		JSR	OUT2HA
+ 1755   EA55   08              		INX
+ 1756   EA56   5A              		DECB
+ 1757   EA57   2E F7           		BGT	NEXT_B
+ 1758   EA59   33              		PULB
+ 1759   EA5A   C1 04           		CMPB	#$4
+ 1760   EA5C   24 05           		BHS	?NUREINTAB
+ 1761   EA5E   86 09           		LDAA	#$09	;
+ 1762   EA60   BD E6 11        		JSR	WRITE	;
+ 1763   EA63                   	?NUREINTAB:
+ 1764   EA63   86 09           		LDAA	#$09	;
+ 1765   EA65   BD E6 11        		JSR	WRITE	;
+ 1766   EA68   39              		RTS		;
+ 1767                          	
+ 1768                          		;DISASSEMBLER-ROUTINE
+ 1769                          		;X-REGISTER ZEIGT AUF OPCODE
+ 1770                          		;AUSGABE DIRECT AUF DAS TERMINAL
+ 1771                          	
+ 1772                          	
+ 1773   EA69   3C              	DIS:	PSHX			;ADRESSEN RETTEN
+ 1774   EA6A   36              		PSHA
+ 1775   EA6B   37              		PSHB
+ 1776   EA6C   FF 9F 10        		STX	ZWAD3		;ZEIGER AUF OPCODE RETTEN
+ 1777                          	
+ 1778   EA6F   A6 00           		LDAA	,X		;OPCODE HOLEN
+ 1779   EA71   CE F3 9E        		LDX	#TABELLE	;TABELLENANFANG
+ 1780                          	
+ 1781                          		;TABELLEN-EINTRAG SUCHEN (A=ZAEHLER,X=TABELLENANFANG)
+ 1782   EA74                   	SUCHEIN:
+ 1783   EA74   4D              		TSTA			;GLEICH DER ERSTE EINTRAG
+ 1784   EA75   27 0D           		BEQ	AUSGABE
+ 1785                          	
+ 1786   EA77   E6 00           	?LOOP:	LDAB	,X		;TABELLENEINTARG HOLEN
+ 1787   EA79   27 03           		BEQ	?SCHULZ		;NULL GEFUNDEN?
+ 1788   EA7B   08              		INX			;NEIN
+ 1789   EA7C   20 F9           		BRA	?LOOP		;MIT ERHOEHTEN ZEIGER NOCHEINMAL VERSUCHEN
+ 1790   EA7E                   	?SCHULZ:
+ 1791   EA7E   08              		INX			;AUF DEN ANFANG DES NAECHSTEN EINTRAGES ZEIGEN
+ 1792   EA7F   4A              		DECA			;SCHLEIFENZAEHLER VERMINDERN
+ 1793   EA80   27 02           		BEQ	AUSGABE 	;IST SCHON NULL
+ 1794   EA82   20 F3           		BRA	?LOOP		;NAECHTE NULL NULLEINTRAG SUCHEN
+ 1795                          	
+ 1796   EA84                   	AUSGABE:
+ 1797   EA84   A6 00           		LDAA	,X		;HIER BEGINNT DIE INTERPRETATION
+ 1798                          					;DER EINTRAEGE
+ 1799   EA86   27 2E           		BEQ	ENDE
+ 1800   EA88   81 20           		CMPA	#$20		;ETWA EIN DRUCKBARES ZEICHEN?
+ 1801   EA8A   2A 2E           		BPL	ZEICHEN
+ 1802   EA8C   81 01           		CMPA	#$1		;UNTERPROGRAMMEN
+ 1803   EA8E   27 32           		BEQ	EINS
+ 1804   EA90   81 02           		CMPA	#$2
+ 1805   EA92   27 3D           		BEQ	ZWEI
+ 1806   EA94   81 03           		CMPA	#$3
+ 1807   EA96   27 50           		BEQ	DREI
+  Sun Mar 15 2026 13:59                                                                                                  Page   33
+
+
+
+
+ 1808   EA98   81 04           		CMPA	#$4
+ 1809   EA9A   27 66           		BEQ	VIER
+ 1810   EA9C   81 05           		CMPA	#$5
+ 1811   EA9E   27 6E           		BEQ	FUENF
+ 1812   EAA0   81 06           		CMPA	#$6
+ 1813   EAA2   27 09           		BEQ	SECHSWEIT
+ 1814   EAA4   81 07           		CMPA	#$7
+ 1815   EAA6   27 08           		BEQ	SIEBENWEIT
+ 1816   EAA8   81 08           		CMPA	#$8
+ 1817   EAAA   27 07           		BEQ	ACHTWEIT
+ 1818   EAAC   3F              		SWI			;FEHLER: HIER SOLLTE ER GAR NICHT HINKOMMEN!
+ 1819   EAAD                   	SECHSWEIT:
+ 1820   EAAD   7E EB 48        		JMP	SECHS
+ 1821   EAB0                   	SIEBENWEIT:
+ 1822   EAB0   7E EB 6A        		JMP	SIEBEN
+ 1823   EAB3                   	ACHTWEIT:
+ 1824   EAB3   7E EB 8C        		JMP	ACHT
+ 1825                          	
+ 1826   EAB6   33              	ENDE:	PULB
+ 1827   EAB7   32              		PULA
+ 1828   EAB8   38              		PULX
+ 1829   EAB9   39              		RTS
+ 1830                          	
+ 1831                          	;INTERPRETIEREN DES TABELLEN EINTRAGS
+ 1832                          	;IN: X=ZEIGER AUF INTERPRETEREINTAG (MUSS VOR VERLASSEN UM EINS ERHOEHT WERD
+ 1833   EABA                   	EN)
+ 1834                          	;    ZWAD3=ZEIGER AUS OPCODE
+ 1835                          	;
+ 1836   EABA                   	ZEICHEN:
+ 1837   EABA   3C              		PSHX			;DB-ZEICHEN
+ 1838   EABB   BD E6 11        		JSR	WRITE
+ 1839   EABE   38              		PULX
+ 1840   EABF   08              		INX
+ 1841   EAC0   20 C2           		BRA	AUSGABE
+ 1842                          	
+ 1843   EAC2   3C              	EINS:	PSHX			;TAB AUSGEBEN
+ 1844   EAC3   86 09           		LDAA	#$09		;ZEICHEN FUER TAB
+ 1845   EAC5   BD E6 11        		JSR	WRITE
+ 1846   EAC8   86 09           		LDAA	#$09		;ZEICHEN FUER TAB
+ 1847   EACA   BD E6 11        		JSR	WRITE
+ 1848   EACD   38              		PULX
+ 1849   EACE   08              		INX			;ZEIGT AUF NAECHSTEN TABELLENBEFEHL
+ 1850   EACF   20 B3           		BRA	AUSGABE
+ 1851                          	
+ 1852   EAD1   3C              	ZWEI:	PSHX			;AUSGABE EIN BYTE
+ 1853   EAD2   86 24           		LDAA	#$24
+ 1854   EAD4   BD E6 11        		JSR	WRITE
+ 1855   EAD7   FE 9F 10        		LDX	ZWAD3
+ 1856   EADA   08              		INX
+ 1857   EADB   FF 9F 10        		STX	ZWAD3
+ 1858   EADE   A6 00           		LDAA	,X
+ 1859   EAE0   BD E6 8E        		JSR	OUT2HA
+ 1860   EAE3   38              		PULX
+ 1861   EAE4   08              		INX
+ 1862   EAE5   7E EA 84        		JMP	AUSGABE
+ 1863                          	
+ 1864   EAE8   3C              	DREI:	PSHX			;AUSGABE ZWEI BYTE
+  Sun Mar 15 2026 13:59                                                                                                  Page   34
+
+
+
+
+ 1865   EAE9   86 24           		LDAA	#$24
+ 1866   EAEB   BD E6 11        		JSR	WRITE
+ 1867   EAEE   FE 9F 10        		LDX	ZWAD3
+ 1868   EAF1   08              		INX
+ 1869   EAF2   A6 00           		LDAA	,X
+ 1870   EAF4   BD E6 8E        		JSR	OUT2HA
+ 1871   EAF7   08              		INX
+ 1872   EAF8   A6 00           		LDAA	,X
+ 1873   EAFA   BD E6 8E        		JSR	OUT2HA
+ 1874   EAFD   38              		PULX
+ 1875   EAFE   08              		INX
+ 1876   EAFF   7E EA 84        		JMP	AUSGABE
+ 1877                          	
+ 1878   EB02   3C              	VIER:	PSHX			;UNDEFINED OPCODE (*****)
+ 1879   EB03                   	VIERPLUS:
+ 1880   EB03   CE F9 E2        		LDX	#TEXT2
+ 1881   EB06   BD E6 74        		JSR	OUTSTR
+ 1882   EB09   38              		PULX
+ 1883   EB0A   08              		INX
+ 1884   EB0B   7E EA 84        		JMP	AUSGABE
+ 1885                          	
+ 1886   EB0E   3C              	FUENF:	PSHX			;RELATIVES BYTE AUSGEBEN
+ 1887   EB0F   86 24           		LDAA	#$24
+ 1888   EB11   BD E6 11        		JSR	WRITE
+ 1889   EB14   FE 9F 10        		LDX	ZWAD3
+ 1890   EB17   08              		INX
+ 1891   EB18   A6 00           		LDAA	0,X
+ 1892   EB1A   2B 14           		BMI	NEG_OFF
+ 1893   EB1C   7F 9F 12        		CLR	REL_BYH
+ 1894   EB1F   B7 9F 13        		STAA	REL_BYL
+ 1895   EB22   08              		INX
+ 1896   EB23   8F              		XGDX
+ 1897   EB24   F3 9F 12        		ADDD	REL_BYH
+ 1898   EB27   8F              		XGDX
+ 1899   EB28   BD E6 83        		JSR	OUTX
+ 1900   EB2B   38              		PULX
+ 1901   EB2C   08              		INX
+ 1902   EB2D   7E EA 84        		JMP	AUSGABE
+ 1903   EB30                   	NEG_OFF:
+ 1904   EB30   43              		COMA
+ 1905   EB31   4C              		INCA
+ 1906   EB32   B7 9F 13        		STAA	REL_BYL
+ 1907   EB35   7F 9F 12        		CLR	REL_BYH
+ 1908   EB38   08              		INX
+ 1909   EB39   8F              		XGDX
+ 1910   EB3A   B3 9F 12        		SUBD	REL_BYH
+ 1911   EB3D   8F              		XGDX
+ 1912   EB3E   BD E6 83        		JSR	OUTX
+ 1913   EB41   38              		PULX
+ 1914   EB42   08              		INX
+ 1915   EB43   7E EA 84        		JMP	AUSGABE
+ 1916                          	
+ 1917                          	
+ 1918   EB46                   	VIERTEMP:
+ 1919   EB46   20 BB           		BRA	VIERPLUS
+ 1920                          	
+ 1921   EB48   3C              	SECHS:	PSHX
+  Sun Mar 15 2026 13:59                                                                                                  Page   35
+
+
+
+
+ 1922   EB49   FE 9F 10        		LDX	ZWAD3		;PAGE 2  ($18)
+ 1923   EB4C   08              		INX
+ 1924   EB4D   3C              		PSHX
+ 1925   EB4E   FF 9F 10        		STX	ZWAD3
+ 1926   EB51   18 38           		PULY			;ZEIGT AUF OPCODE (DER NACH DEM PREBYTE)
+ 1927   EB53   4F              		CLRA			;ZAEHLER AUF NULL SETZTEN
+ 1928   EB54   CE F0 C6        		LDX	#TPAGE2
+ 1929   EB57   E6 00           	?LOOP:	LDAB	0,X		;TABELLENEINTRAG HOLEN
+ 1930   EB59   27 A8           		BEQ	VIERPLUS	;UNDEF. OPCODE
+ 1931   EB5B   4C              		INCA
+ 1932   EB5C   08              		INX
+ 1933   EB5D   18 E1 00        		CMPB	0,Y
+ 1934   EB60   26 F5           		BNE	?LOOP
+ 1935   EB62   4A              		DECA
+ 1936   EB63   38              		PULX
+ 1937   EB64   CE F1 A7        		LDX	#TABELLE18	;TABELLE FUER PAGE 2
+ 1938   EB67   7E EA 74        		JMP	SUCHEIN
+ 1939                          	
+ 1940   EB6A   3C              	SIEBEN:	PSHX
+ 1941   EB6B   FE 9F 10        		LDX	ZWAD3		;PAGE 3  ($1A)
+ 1942   EB6E   08              		INX
+ 1943   EB6F   3C              		PSHX
+ 1944   EB70   FF 9F 10        		STX	ZWAD3
+ 1945   EB73   18 38           		PULY
+ 1946   EB75   4F              		CLRA
+ 1947   EB76   CE F1 07        		LDX	#TPAGE3
+ 1948   EB79   E6 00           	?LOOP:	LDAB	0,X		;TABELLENEINTRAG HOLEN
+ 1949   EB7B   27 86           		BEQ	VIERPLUS	;UNDEF. OPCODE
+ 1950   EB7D   4C              		INCA
+ 1951   EB7E   08              		INX
+ 1952   EB7F   18 E1 00        		CMPB	0,Y
+ 1953   EB82   26 F5           		BNE	?LOOP
+ 1954   EB84   4A              		DECA
+ 1955   EB85   38              		PULX
+ 1956   EB86   CE F1 74        		LDX	#TABELLE1A	;TABELLE FUER PAGE 3
+ 1957   EB89   7E EA 74        		JMP	SUCHEIN
+ 1958                          	
+ 1959   EB8C   3C              	ACHT:	PSHX
+ 1960   EB8D   FE 9F 10        		LDX	ZWAD3		;PAGE 4  ($CD)
+ 1961   EB90   08              		INX
+ 1962   EB91   3C              		PSHX
+ 1963   EB92   FF 9F 10        		STX	ZWAD3
+ 1964   EB95   18 38           		PULY
+ 1965   EB97   4F              		CLRA
+ 1966   EB98   CE F1 0F        		LDX	#TPAGE4
+ 1967   EB9B   E6 00           	?LOOP:	LDAB	0,X		;TABELLENEINTRAG HOLEN
+ 1968   EB9D   27 A7           		BEQ	VIERTEMP	;UNDEF. OPCODE
+ 1969   EB9F   4C              		INCA
+ 1970   EBA0   08              		INX
+ 1971   EBA1   18 E1 00        		CMPB	0,Y
+ 1972   EBA4   26 F5           		BNE	?LOOP
+ 1973   EBA6   4A              		DECA
+ 1974   EBA7   38              		PULX
+ 1975   EBA8   CE F1 54        		LDX	#TABELLECD	;TABELLE FUER PAGE 4
+ 1976   EBAB   7E EA 74        		JMP	SUCHEIN
+ 1977                          	
+ 1978                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page   36
+
+
+
+
+ 1979                          	;*******************************
+ 1980                          	;SYSTEMMELDUNGEN UND KONSTANTEN
+ 1981                          	;*******************************
+ 1982                          	
+ 1983                          	
+ 1984   EBAE   0D 0A 0A        	SELFT:	DB	CR,LF,LF
+ 1985   EBB1   52 41 4D 20 74  		DB	'RAM test laeuft...',0
+        EBB6   65 73 74 20 6C 
+        EBBB   61 65 75 66 74 
+        EBC0   2E 2E 2E 00 
+ 1986                          	
+ 1987   EBC4   0D 0A           	RAMMS1:	DB	CR,LF
+ 1988   EBC6   52 41 4D 2D 42  		DB	'RAM-Bereich von $',0
+        EBCB   65 72 65 69 63 
+        EBD0   68 20 76 6F 6E 
+        EBD5   20 24 00 
+ 1989                          	
+ 1990   EBD8   20 62 69 73 20  	TOMSG:	DB	' bis $',0
+        EBDD   24 00 
+ 1991                          	
+ 1992   EBDF   0D 0A 0A        	HLPTXT:	DB	CR,LF,LF
+ 1993   EBE2   20 20 36 38 48  		DB	'  68HC11 Monitor V 1.1 Befehlsuebersicht	'
+        EBE7   43 31 31 20 4D 
+        EBEC   6F 6E 69 74 6F 
+        EBF1   72 20 56 20 31 
+        EBF6   2E 31 20 42 65 
+        EBFB   66 65 68 6C 73 
+        EC00   75 65 62 65 72 
+        EC05   73 69 63 68 74 
+        EC0A   09 
+ 1994   EC0B   53 70 65 69 63  		DB	'Speicherbefehle:'
+        EC10   68 65 72 62 65 
+        EC15   66 65 68 6C 65 
+        EC1A   3A 
+ 1995   EC1B   0D 0A 0A        		DB	CR,LF,LF
+ 1996   EC1E   09 43 20 20 20  		DB	'	C   Daten kopieren			'
+        EC23   44 61 74 65 6E 
+        EC28   20 6B 6F 70 69 
+        EC2D   65 72 65 6E 09 
+        EC32   09 09 
+ 1997   EC34   4D 20 20 20 6E  		DB	'M   neue Adresse'
+        EC39   65 75 65 20 41 
+        EC3E   64 72 65 73 73 
+        EC43   65 
+ 1998   EC44   0D 0A           		DB	CR,LF
+ 1999   EC46   09 44 20 20 20  		DB	'	D   Speicherbereich anzeigen		'
+        EC4B   53 70 65 69 63 
+        EC50   68 65 72 62 65 
+        EC55   72 65 69 63 68 
+        EC5A   20 61 6E 7A 65 
+        EC5F   69 67 65 6E 09 
+        EC64   09 
+ 2000   EC65   52 25 20 20 50  		DB	'R%  ProzessorRegister'
+        EC6A   72 6F 7A 65 73 
+        EC6F   73 6F 72 52 65 
+        EC74   67 69 73 74 65 
+        EC79   72 
+  Sun Mar 15 2026 13:59                                                                                                  Page   37
+
+
+
+
+ 2001   EC7A   0D 0A           		DB	CR,LF
+ 2002   EC7C   09 47 20 20 20  		DB	'	G   Programm starten			'
+        EC81   50 72 6F 67 72 
+        EC86   61 6D 6D 20 73 
+        EC8B   74 61 72 74 65 
+        EC90   6E 09 09 09 
+ 2003   EC94   54 20 20 20 54  		DB	'T   Texteingabe'
+        EC99   65 78 74 65 69 
+        EC9E   6E 67 61 62 65 
+ 2004   ECA3   0D 0A           		DB	CR,LF
+ 2005   ECA5   09 48 20 20 20  		DB	'	H   diese Hilfsseite			'
+        ECAA   64 69 65 73 65 
+        ECAF   20 48 69 6C 66 
+        ECB4   73 73 65 69 74 
+        ECB9   65 09 09 09 
+ 2006   ECBD   3D 20 20 20 67  		DB	'=   gleiche Adresse'
+        ECC2   6C 65 69 63 68 
+        ECC7   65 20 41 64 72 
+        ECCC   65 73 73 65 
+ 2007   ECD0   0D 0A           		DB	CR,LF
+ 2008   ECD2   09 4C 20 20 20  		DB	'	L   MOTOROLA S-Format laden		'
+        ECD7   4D 4F 54 4F 52 
+        ECDC   4F 4C 41 20 53 
+        ECE1   2D 46 6F 72 6D 
+        ECE6   61 74 20 6C 61 
+        ECEB   64 65 6E 09 09 
+ 2009   ECF0   2B 20 20 20 41  		DB	'+   Adresse + 1'
+        ECF5   64 72 65 73 73 
+        ECFA   65 20 2B 20 31 
+ 2010   ECFF   0D 0A           		DB	CR,LF
+ 2011   ED01   09 4D 20 20 20  		DB	'	M   Speicher anzeigen/aendern		'
+        ED06   53 70 65 69 63 
+        ED0B   68 65 72 20 61 
+        ED10   6E 7A 65 69 67 
+        ED15   65 6E 2F 61 65 
+        ED1A   6E 64 65 72 6E 
+        ED1F   09 09 
+ 2012   ED21   2D 20 20 20 41  		DB	'-   Adresse - 1'
+        ED26   64 72 65 73 73 
+        ED2B   65 20 2D 20 31 
+ 2013   ED30   0D 0A           		DB	CR,LF
+ 2014   ED32   09 52 20 20 20  		DB	'	R   Register anzeigen			'
+        ED37   52 65 67 69 73 
+        ED3C   74 65 72 20 61 
+        ED41   6E 7A 65 69 67 
+        ED46   65 6E 09 09 09 
+ 2015   ED4B   27 20 20 20 72  		DB	$27,'   relativ anzeigen'
+        ED50   65 6C 61 74 69 
+        ED55   76 20 61 6E 7A 
+        ED5A   65 69 67 65 6E 
+ 2016   ED5F   0D 0A           		DB	CR,LF
+ 2017   ED61   09 53 20 20 20  		DB	'	S   Single step Benutzer-Programm	'
+        ED66   53 69 6E 67 6C 
+        ED6B   65 20 73 74 65 
+        ED70   70 20 42 65 6E 
+        ED75   75 74 7A 65 72 
+        ED7A   2D 50 72 6F 67 
+  Sun Mar 15 2026 13:59                                                                                                  Page   38
+
+
+
+
+        ED7F   72 61 6D 6D 09 
+ 2018   ED84   40 20 20 20 69  		DB	'@   indirekt anzeigen'
+        ED89   6E 64 69 72 65 
+        ED8E   6B 74 20 61 6E 
+        ED93   7A 65 69 67 65 
+        ED98   6E 
+ 2019   ED99   0D 0A           		DB	CR,LF
+ 2020   ED9B   09 54 20 20 20  		DB	'	T   Trace Benutzer-Programm		'
+        EDA0   54 72 61 63 65 
+        EDA5   20 42 65 6E 75 
+        EDAA   74 7A 65 72 2D 
+        EDAF   50 72 6F 67 72 
+        EDB4   61 6D 6D 09 09 
+ 2021   EDB9   3C 20 20 20 61  		DB	'<   alte Adresse anzeigen'
+        EDBE   6C 74 65 20 41 
+        EDC3   64 72 65 73 73 
+        EDC8   65 20 61 6E 7A 
+        EDCD   65 69 67 65 6E 
+ 2022   EDD2   0D 0A           		DB	CR,LF
+ 2023   EDD4   09 09 09 09 09  		DB	'						'
+        EDD9   09 
+ 2024   EDDA   3E 20 20 20 72  		DB	'>   relativen Offset errechnen'
+        EDDF   65 6C 61 74 69 
+        EDE4   76 65 6E 20 4F 
+        EDE9   66 66 73 65 74 
+        EDEE   20 65 72 72 65 
+        EDF3   63 68 6E 65 6E 
+ 2025   EDF8   0D 0A           		DB	CR,LF
+ 2026   EDFA   43 54 52 4C 2F  		DB	'CTRL/C Abbruch eines Befehls oder Programms'
+        EDFF   43 20 41 62 62 
+        EE04   72 75 63 68 20 
+        EE09   65 69 6E 65 73 
+        EE0E   20 42 65 66 65 
+        EE13   68 6C 73 20 6F 
+        EE18   64 65 72 20 50 
+        EE1D   72 6F 67 72 61 
+        EE22   6D 6D 73 
+ 2027   EE25   0D 0A           		DB	CR,LF
+ 2028   EE27   43 54 52 4C 2F  		DB	'CTRL/T Anzeigen der Register waehrend des Programmablaufs'
+        EE2C   54 20 41 6E 7A 
+        EE31   65 69 67 65 6E 
+        EE36   20 64 65 72 20 
+        EE3B   52 65 67 69 73 
+        EE40   74 65 72 20 77 
+        EE45   61 65 68 72 65 
+        EE4A   6E 64 20 64 65 
+        EE4F   73 20 50 72 6F 
+        EE54   67 72 61 6D 6D 
+        EE59   61 62 6C 61 75 
+        EE5E   66 73 
+ 2029   EE60   0D 0A 0A        		DB	CR,LF,LF
+ 2030   EE63   09 45 20 20 20  		DB	'	E   Disassembler V 0.2'
+        EE68   44 69 73 61 73 
+        EE6D   73 65 6D 62 6C 
+        EE72   65 72 20 56 20 
+        EE77   30 2E 32 
+ 2031   EE7A   0D 0A 00        		DB	CR,LF,0
+  Sun Mar 15 2026 13:59                                                                                                  Page   39
+
+
+
+
+ 2032                          	
+ 2033                          	
+ 2034   EE7D   0D 0A           	PROMPT:	DB	CR,LF
+ 2035   EE7F   48 43 2D 4D 4F  		DB	'HC-MON> ',0
+        EE84   4E 3E 20 00 
+ 2036                          	
+ 2037   EE88   20 53 70 65 69  	TXTDUM:	DB	' Speicher anzeigen von $',0
+        EE8D   63 68 65 72 20 
+        EE92   61 6E 7A 65 69 
+        EE97   67 65 6E 20 76 
+        EE9C   6F 6E 20 24 00 
+ 2038                          	
+ 2039   EEA1   20 50 72 6F 67  	TXTGOT:	DB	' Programm starten bei $',0
+        EEA6   72 61 6D 6D 20 
+        EEAB   73 74 61 72 74 
+        EEB0   65 6E 20 62 65 
+        EEB5   69 20 24 00 
+ 2040                          	
+ 2041   EEB9   20 54 72 61 63  	TXTTRC:	DB	' Trace Benutzer-Programm ab $',0
+        EEBE   65 20 42 65 6E 
+        EEC3   75 74 7A 65 72 
+        EEC8   2D 50 72 6F 67 
+        EECD   72 61 6D 6D 20 
+        EED2   61 62 20 24 00 
+ 2042                          	
+ 2043   EED7   20 53 69 6E 67  	TXTSGL:	DB	' Single Step:',0
+        EEDC   6C 65 20 53 74 
+        EEE1   65 70 3A 00 
+ 2044                          	
+ 2045   EEE5   20 4D 4F 54 4F  	TXTLOA:	DB	' MOTOROLA S-Format laden',0
+        EEEA   52 4F 4C 41 20 
+        EEEF   53 2D 46 6F 72 
+        EEF4   6D 61 74 20 6C 
+        EEF9   61 64 65 6E 00 
+ 2046                          	
+ 2047   EEFE   20 53 70 65 69  	TXTMEM:	DB	' Speicherbereich anzeigen ab $',0
+        EF03   63 68 65 72 62 
+        EF08   65 72 65 69 63 
+        EF0D   68 20 61 6E 7A 
+        EF12   65 69 67 65 6E 
+        EF17   20 61 62 20 24 
+        EF1C   00 
+ 2048                          	
+ 2049   EF1D   20 52 65 67 69  	TXTREG:	DB	' Register anzeigen: ',0
+        EF22   73 74 65 72 20 
+        EF27   61 6E 7A 65 69 
+        EF2C   67 65 6E 3A 20 
+        EF31   00 
+ 2050                          	
+ 2051   EF32   20 54 65 78 74  	TXTMSG:	DB	' Texteingabe. (Exit with CTRL/C) '
+        EF37   65 69 6E 67 61 
+        EF3C   62 65 2E 20 28 
+        EF41   45 78 69 74 20 
+        EF46   77 69 74 68 20 
+        EF4B   43 54 52 4C 2F 
+        EF50   43 29 20 
+ 2052   EF53   80              		DB	$80
+  Sun Mar 15 2026 13:59                                                                                                  Page   40
+
+
+
+
+ 2053                          	
+ 2054   EF54   20 44 61 74 65  	TXTCOP:	DB	' Daten kopieren von $',0
+        EF59   6E 20 6B 6F 70 
+        EF5E   69 65 72 65 6E 
+        EF63   20 76 6F 6E 20 
+        EF68   24 00 
+ 2055                          	
+ 2056   EF6A   20 52 65 67 69  	REGNAM:	DB	' Registername? ',0
+        EF6F   73 74 65 72 6E 
+        EF74   61 6D 65 3F 20 
+        EF79   00 
+ 2057                          	
+ 2058   EF7A   20 54 72 61 63  	CALTXT:	DB	' Trace Unterprogramm (Y/N)? ',0
+        EF7F   65 20 55 6E 74 
+        EF84   65 72 70 72 6F 
+        EF89   67 72 61 6D 6D 
+        EF8E   20 28 59 2F 4E 
+        EF93   29 3F 20 00 
+ 2059                          	
+ 2060   EF97   0D 0A           	SORRY:	DB	CR,LF
+ 2061   EF99   4B 65 69 6E 20  		DB	'Kein RAM-Bereich. Trace...',0
+        EF9E   52 41 4D 2D 42 
+        EFA3   65 72 65 69 63 
+        EFA8   68 2E 20 54 72 
+        EFAD   61 63 65 2E 2E 
+        EFB2   2E 00 
+ 2062                          	
+ 2063   EFB4   08 20 08 00     	DELTXT:	DB	BS,SPACE,BS,0
+ 2064                          	
+ 2065   EFB8   0D 0A           	ERRMSG:	DB	CR,LF
+ 2066   EFBA   07              	CHGERR:	DB	7
+ 2067   EFBB   3F 20 53 70 65  		DB	'? Speicher hat sich nicht geaendert',0
+        EFC0   69 63 68 65 72 
+        EFC5   20 68 61 74 20 
+        EFCA   73 69 63 68 20 
+        EFCF   6E 69 63 68 74 
+        EFD4   20 67 65 61 65 
+        EFD9   6E 64 65 72 74 
+        EFDE   00 
+ 2068                          	
+ 2069   EFDF   20 61 62 20 24  	AT:	DB	' ab $',0
+        EFE4   00 
+ 2070                          	
+ 2071   EFE5   07              	OFSERR:	DB	$7
+ 2072   EFE6   3F 20 65 72 72  		DB	'? errechnete Offset zu gross',0
+        EFEB   65 63 68 6E 65 
+        EFF0   74 65 20 4F 66 
+        EFF5   66 73 65 74 20 
+        EFFA   7A 75 20 67 72 
+        EFFF   6F 73 73 00 
+ 2073                          	
+ 2074   F003   0D 0A 07        	CKSERR:	DB	CR,LF,7
+ 2075   F006   3F 20 50 72 75  		DB	'? Pruefsummenfehler',0
+        F00B   65 66 73 75 6D 
+        F010   6D 65 6E 66 65 
+        F015   68 6C 65 72 00 
+ 2076                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page   41
+
+
+
+
+ 2077   F01A   07              	CHRERR:	DB	7
+ 2078   F01B   3F 20 66 61 6C  		DB	'? falsches Zeichen',0
+        F020   73 63 68 65 73 
+        F025   20 5A 65 69 63 
+        F02A   68 65 6E 00 
+ 2079                          	
+ 2080   F02E   0D 0A 07        	GOERR:	DB	CR,LF,7
+ 2081   F031   3F 20 53 50 20  		DB	'? SP nicht im RAM-Bereich! Befehl abgebrochen',0
+        F036   6E 69 63 68 74 
+        F03B   20 69 6D 20 52 
+        F040   41 4D 2D 42 65 
+        F045   72 65 69 63 68 
+        F04A   21 20 42 65 66 
+        F04F   65 68 6C 20 61 
+        F054   62 67 65 62 72 
+        F059   6F 63 68 65 6E 
+        F05E   00 
+ 2082                          	
+ 2083   F05F   0D 0A           	BRKMSG:	DB	CR,LF
+ 2084   F061   42 72 65 61 6B  		DB	'Breakpoint erkannt bei PC=$',0
+        F066   70 6F 69 6E 74 
+        F06B   20 65 72 6B 61 
+        F070   6E 6E 74 20 62 
+        F075   65 69 20 50 43 
+        F07A   3D 24 00 
+ 2085                          	
+ 2086   F07D   0D 0A           	CTRLCM:	DB	CR,LF
+ 2087   F07F   50 72 6F 67 72  		DB	'Programm unterbrochen mit CTRL/C bei PC=$',0
+        F084   61 6D 6D 20 75 
+        F089   6E 74 65 72 62 
+        F08E   72 6F 63 68 65 
+        F093   6E 20 6D 69 74 
+        F098   20 43 54 52 4C 
+        F09D   2F 43 20 62 65 
+        F0A2   69 20 50 43 3D 
+        F0A7   24 00 
+ 2088                          	
+ 2089   F0A9   0D 0A 07        	OPCODM:	DB	CR,LF,7
+ 2090   F0AC   49 6C 6C 65 67  	OPCODI:	DB	'Illegal opcode
+        F0B1   61 6C 20 6F 70 
+        F0B6   63 6F 64 65 
+ 2091                          	
+ 2092   F0BA   62 65 69 20 50  	OPCODA:	DB	'bei PC=$',0
+        F0BF   43 3D 24 00 
+ 2093                          	
+ 2094   F0C3   3F 07 00        	ERRBEL:	DB	'?',7,0
+ 2095                          	
+ 2096                          	;OPCODELAENGEN, 4 OPCODES IN EINEM BYTE: %00=ILLEGALER OPCODE
+ 2097                          	
+ 2098   F0C6   08 09 1C 1D 1E  	TPAGE2:	DB	$08,$09,$1C,$1D,$1E,$1F,$30,$35,$38,$3A,$3C
+        F0CB   1F 30 35 38 3A 
+        F0D0   3C 
+ 2099   F0D1   60 63 64 66 67  		DB	$60,$63,$64,$66,$67,$68,$69,$6A,$6C,$6D,$6E,$6F
+        F0D6   68 69 6A 6C 6D 
+        F0DB   6E 6F 
+ 2100   F0DD   8C 8F 9C A0 A1  		DB	$8C,$8F,$9C,$A0,$A1,$A2,$A3,$A4,$A5,$A6,$A7
+        F0E2   A2 A3 A4 A5 A6 
+  Sun Mar 15 2026 13:59                                                                                                  Page   42
+
+
+
+
+        F0E7   A7 
+ 2101   F0E8   A8 A9 AA AB AC  		DB	$A8,$A9,$AA,$AB,$AC,$AD,$AE,$AF,$BC,$CE,$DE,$DF
+        F0ED   AD AE AF BC CE 
+        F0F2   DE DF 
+ 2102   F0F4   E0 E1 E2 E3 E4  		DB	$E0,$E1,$E2,$E3,$E4,$E5,$E6,$E7,$E8,$E9,$EA
+        F0F9   E5 E6 E7 E8 E9 
+        F0FE   EA 
+ 2103   F0FF   EB EC ED EE EF  		DB	$EB,$EC,$ED,$EE,$EF,$FE,$FF,$00
+        F104   FE FF 00 
+ 2104                          	
+ 2105   F107   83 93 A3 AC B3  	TPAGE3:	DB	$83,$93,$A3,$AC,$B3,$EE,$EF,$00
+        F10C   EE EF 00 
+ 2106                          	
+ 2107   F10F   A3 AC EE EF 00  	TPAGE4:	DB	$A3,$AC,$EE,$EF,$00
+ 2108                          	
+ 2109   F114   54 55 55 55     	CODTAB:	DB	01010100B,01010101B,01010101B,01010101B	; NOP - SEI
+ 2110   F118   F5 5F 44 FF     		DB	11110101B,01011111B,01000100B,11111111B	; SBA - BRCLR
+ 2111   F11C   AA AA AA AA     		DB	10101010B,10101010B,10101010B,10101010B	; BRA - BLE
+ 2112   F120   55 55 55 55     		DB	01010101B,01010101B,01010101B,01010101B	; TSX - SWI
+ 2113   F124   41 51 15 45     		DB	01000001B,01010001B,00010101B,01000101B	; NEGA - CLRA
+ 2114   F128   41 51 15 45     		DB	01000001B,01010001B,00010101B,01000101B	; NEGB - CLRB
+ 2115   F12C   82 A2 2A AA     		DB	10000010B,10100010B,00101010B,10101010B	; NEG, - CLR,
+ 2116   F130   C3 F3 3F FF     		DB	11000011B,11110011B,00111111B,11111111B	; NEGe - CLRe
+ 2117                          	
+ 2118   F134   EA 2A AA 7B     		DB	11101010B,00101010B,10101010B,01111011B	; SUBA  - XGDX
+ 2119   F138   AA AA AA AA     		DB	10101010B,10101010B,10101010B,10101010B	; SUBAd - STSd
+ 2120   F13C   AA AA AA AA     		DB	10101010B,10101010B,10101010B,10101010B	; SUBA, - STS,
+ 2121   F140   FF FF FF FF     		DB	11111111B,11111111B,11111111B,11111111B	; SUBAe - STSe
+ 2122                          	
+ 2123   F144   EA 2A AA 73     		DB	11101010B,00101010B,10101010B,01110011B	; SUBB - STOP
+ 2124   F148   AA AA AA AA     		DB	10101010B,10101010B,10101010B,10101010B	; SUBBd - STXd
+ 2125   F14C   AA AA AA AA     		DB	10101010B,10101010B,10101010B,10101010B	; SUBB, - STX,
+ 2126   F150   FF FF FF FF     		DB	11111111B,11111111B,11111111B,11111111B	; SUBBe - STXe
+ 2127                          	
+ 2128                          	
+ 2129   F154                   	TABELLECD:
+ 2130   F154   43 50 44 01 02  		DB	'CPD',1,2,',Y',0
+        F159   2C 59 00 
+ 2131   F15C   43 50 58 01 02  		DB	'CPX',1,2,',Y',0
+        F161   2C 59 00 
+ 2132   F164   4C 44 58 01 02  		DB	'LDX',1,2,',Y',0
+        F169   2C 59 00 
+ 2133   F16C   53 54 58 01 02  		DB	'STX',1,2,',Y',0
+        F171   2C 59 00 
+ 2134                          	
+ 2135   F174                   	TABELLE1A:
+ 2136   F174   43 50 44 01 23  		DB	'CPD',1,'#',3,0
+        F179   03 00 
+ 2137   F17B   43 50 44 01 02  		DB	'CPD',1,2,0
+        F180   00 
+ 2138   F181   43 50 44 01 02  		DB	'CPD',1,2,',X',0
+        F186   2C 58 00 
+ 2139   F189   43 50 59 01 02  		DB	'CPY',1,2,',X',0
+        F18E   2C 58 00 
+ 2140   F191   43 50 44 01 03  		DB	'CPD',1,3,0
+        F196   00 
+ 2141   F197   4C 44 59 01 02  		DB	'LDY',1,2,',X',0
+  Sun Mar 15 2026 13:59                                                                                                  Page   43
+
+
+
+
+        F19C   2C 58 00 
+ 2142   F19F   53 54 59 01 02  		DB	'STY',1,2,',X',0
+        F1A4   2C 58 00 
+ 2143                          	
+ 2144   F1A7                   	TABELLE18:
+ 2145   F1A7   49 4E 59 00     		DB	'INY',0
+ 2146   F1AB   44 45 59 00     		DB	'DEY',0
+ 2147   F1AF   42 53 45 54 01  		DB	'BSET',1,2,',Y,',2,0
+        F1B4   02 2C 59 2C 02 
+        F1B9   00 
+ 2148   F1BA   42 43 4C 52 01  		DB	'BCLR',1,2,',Y,',2,0
+        F1BF   02 2C 59 2C 02 
+        F1C4   00 
+ 2149   F1C5   42 52 53 45 54  		DB	'BRSET',1,2,',Y,',2,',',2,0
+        F1CA   01 02 2C 59 2C 
+        F1CF   02 2C 02 00 
+ 2150   F1D3   42 52 43 4C 52  		DB	'BRCLR',1,2,',Y,',2,',',2,0
+        F1D8   01 02 2C 59 2C 
+        F1DD   02 2C 02 00 
+ 2151   F1E1   54 53 59 00     		DB	'TSY',0
+ 2152   F1E5   54 59 53 00     		DB	'TYS',0
+ 2153   F1E9   50 55 4C 59 00  		DB	'PULY',0
+ 2154   F1EE   41 42 59 00     		DB	'ABY',0
+ 2155   F1F2   50 53 48 59 00  		DB	'PSHY',0
+ 2156   F1F7   4E 45 47 01 02  		DB	'NEG',1,2,',Y',0
+        F1FC   2C 59 00 
+ 2157   F1FF   43 4F 4D 01 02  		DB	'COM',1,2,',Y',0
+        F204   2C 59 00 
+ 2158   F207   4C 53 52 01 02  		DB	'LSR',1,2,',Y',0
+        F20C   2C 59 00 
+ 2159   F20F   52 4F 52 01 02  		DB	'ROR',1,2,',Y',0
+        F214   2C 59 00 
+ 2160   F217   41 53 52 01 02  		DB	'ASR',1,2,',Y',0
+        F21C   2C 59 00 
+ 2161   F21F   41 53 4C 01 02  		DB	'ASL',1,2,',Y',0
+        F224   2C 59 00 
+ 2162   F227   52 4F 4C 01 02  		DB	'ROL',1,2,',Y',0
+        F22C   2C 59 00 
+ 2163   F22F   44 45 43 01 02  		DB	'DEC',1,2,',Y',0
+        F234   2C 59 00 
+ 2164   F237   49 4E 43 01 02  		DB	'INC',1,2,',Y',0
+        F23C   2C 59 00 
+ 2165   F23F   54 53 54 01 02  		DB	'TST',1,2,',Y',0
+        F244   2C 59 00 
+ 2166   F247   4A 4D 50 01 02  		DB	'JMP',1,2,',Y',0
+        F24C   2C 59 00 
+ 2167   F24F   43 4C 52 01 02  		DB	'CLR',1,2,',Y',0
+        F254   2C 59 00 
+ 2168   F257   43 50 59 01 23  		DB	'CPY',1,'#',3,0
+        F25C   03 00 
+ 2169   F25E   58 47 44 59 00  		DB	'XGDY',0
+ 2170   F263   43 50 59 01 02  		DB	'CPY',1,2,0
+        F268   00 
+ 2171   F269   53 55 42 41 01  		DB	'SUBA',1,2,',Y',0
+        F26E   02 2C 59 00 
+ 2172   F272   43 4D 50 41 01  		DB	'CMPA',1,2,',Y',0
+        F277   02 2C 59 00 
+  Sun Mar 15 2026 13:59                                                                                                  Page   44
+
+
+
+
+ 2173   F27B   53 42 43 41 01  		DB	'SBCA',1,2,',Y',0
+        F280   02 2C 59 00 
+ 2174   F284   53 55 42 44 01  		DB	'SUBD',1,2,',Y',0
+        F289   02 2C 59 00 
+ 2175   F28D   41 4E 44 41 01  		DB	'ANDA',1,2,',Y',0
+        F292   02 2C 59 00 
+ 2176   F296   42 49 54 41 01  		DB	'BITA',1,2,',Y',0
+        F29B   02 2C 59 00 
+ 2177   F29F   4C 44 41 41 01  		DB	'LDAA',1,2,',Y',0
+        F2A4   02 2C 59 00 
+ 2178   F2A8   53 54 41 41 01  		DB	'STAA',1,2,',Y',0
+        F2AD   02 2C 59 00 
+ 2179   F2B1   45 4F 52 41 01  		DB	'EORA',1,2,',Y',0
+        F2B6   02 2C 59 00 
+ 2180   F2BA   41 44 43 41 01  		DB	'ADCA',1,2,',Y',0
+        F2BF   02 2C 59 00 
+ 2181   F2C3   4F 52 41 41 01  		DB	'ORAA',1,2,',Y',0
+        F2C8   02 2C 59 00 
+ 2182   F2CC   41 44 44 41 01  		DB	'ADDA',1,2,',Y',0
+        F2D1   02 2C 59 00 
+ 2183   F2D5   43 50 59 01 02  		DB	'CPY',1,2,',Y',0
+        F2DA   2C 59 00 
+ 2184   F2DD   4A 53 52 01 02  		DB	'JSR',1,2,',Y',0
+        F2E2   2C 59 00 
+ 2185   F2E5   4C 44 53 01 02  		DB	'LDS',1,2,',Y',0
+        F2EA   2C 59 00 
+ 2186   F2ED   53 54 53 01 02  		DB	'STS',1,2,',Y',0
+        F2F2   2C 59 00 
+ 2187   F2F5   43 50 59 01 03  		DB	'CPY',1,3,0
+        F2FA   00 
+ 2188   F2FB   4C 44 59 01 23  		DB	'LDY',1,'#',3,0
+        F300   03 00 
+ 2189   F302   4C 44 59 01 02  		DB	'LDY',1,2,0
+        F307   00 
+ 2190   F308   53 54 59 01 02  		DB	'STY',1,2,0
+        F30D   00 
+ 2191   F30E   53 55 42 42 01  		DB	'SUBB',1,2,',Y',0
+        F313   02 2C 59 00 
+ 2192   F317   43 4D 50 42 01  		DB	'CMPB',1,2,',Y',0
+        F31C   02 2C 59 00 
+ 2193   F320   53 42 43 42 01  		DB	'SBCB',1,2,',Y',0
+        F325   02 2C 59 00 
+ 2194   F329   41 44 44 44 01  		DB	'ADDD',1,2,',Y',0
+        F32E   02 2C 59 00 
+ 2195   F332   41 4E 44 42 01  		DB	'ANDB',1,2,',Y',0
+        F337   02 2C 59 00 
+ 2196   F33B   42 49 54 42 01  		DB	'BITB',1,2,',Y',0
+        F340   02 2C 59 00 
+ 2197   F344   4C 44 41 42 01  		DB	'LDAB',1,2,',Y',0
+        F349   02 2C 59 00 
+ 2198   F34D   53 54 41 42 01  		DB	'STAB',1,2,',Y',0
+        F352   02 2C 59 00 
+ 2199   F356   45 4F 52 42 01  		DB	'EORB',1,2,',Y',0
+        F35B   02 2C 59 00 
+ 2200   F35F   41 44 43 42 01  		DB	'ADCB',1,2,',Y',0
+        F364   02 2C 59 00 
+ 2201   F368   4F 52 41 42 01  		DB	'ORAB',1,2,',Y',0
+  Sun Mar 15 2026 13:59                                                                                                  Page   45
+
+
+
+
+        F36D   02 2C 59 00 
+ 2202   F371   41 44 44 42 01  		DB	'ADDB',1,2,',Y',0
+        F376   02 2C 59 00 
+ 2203   F37A   4C 44 44 01 02  		DB	'LDD',1,2,',Y',0
+        F37F   2C 59 00 
+ 2204   F382   53 54 44 01 02  		DB	'STD',1,2,',Y',0
+        F387   2C 59 00 
+ 2205   F38A   53 54 59 01 02  		DB	'STY',1,2,',Y',0
+        F38F   2C 59 00 
+ 2206   F392   4C 44 59 01 03  		DB	'LDY',1,3,0
+        F397   00 
+ 2207   F398   53 54 59 01 03  		DB	'STY',1,3,0
+        F39D   00 
+ 2208                          	
+ 2209   F39E                   	TABELLE:
+ 2210   F39E   04 00           		DB	4,0		;0
+ 2211   F3A0   4E 4F 50 00     		DB	'NOP',0
+ 2212   F3A4   49 44 49 56 00  		DB	'IDIV',0
+ 2213   F3A9   46 44 49 56 00  		DB	'FDIV',0
+ 2214   F3AE   4C 53 52 44 00  		DB	'LSRD',0
+ 2215   F3B3   41 53 4C 44 00  		DB	'ASLD',0
+ 2216   F3B8   54 41 50 00     		DB	'TAP',0
+ 2217   F3BC   54 50 41 00     		DB	'TPA',0
+ 2218   F3C0   49 4E 58 00     		DB	'INX',0
+ 2219   F3C4   44 45 58 00     		DB	'DEX',0
+ 2220   F3C8   43 4C 56 00     		DB	'CLV',0
+ 2221   F3CC   53 45 56 00     		DB	'SEV',0
+ 2222   F3D0   43 4C 43 00     		DB	'CLC',0
+ 2223   F3D4   53 45 43 00     		DB	'SEC',0
+ 2224   F3D8   43 4C 49 00     		DB	'CLI',0
+ 2225   F3DC   53 45 49 00     		DB	'SEI',0
+ 2226                          	
+ 2227   F3E0   53 42 41 00     		DB	'SBA',0		;1
+ 2228   F3E4   43 42 41 00     		DB	'CBA',0
+ 2229   F3E8   42 52 53 45 54  		DB	'BRSET',1,2,',',2,',',5,0
+        F3ED   01 02 2C 02 2C 
+        F3F2   05 00 
+ 2230   F3F4   42 52 43 4C 52  		DB	'BRCLR',1,2,',',2,',',5,0
+        F3F9   01 02 2C 02 2C 
+        F3FE   05 00 
+ 2231   F400   42 53 45 54 01  		DB	'BSET',1,2,',',2,0
+        F405   02 2C 02 00 
+ 2232   F409   42 43 4C 52 01  		DB	'BCLR',1,2,',',2,0
+        F40E   02 2C 02 00 
+ 2233   F412   54 41 42 00     		DB	'TAB',0
+ 2234   F416   54 42 41 00     		DB	'TBA',0
+ 2235   F41A   06 00           		DB	6,0
+ 2236   F41C   44 41 41 00     		DB	'DAA',0
+ 2237   F420   07 00           		DB	7,0
+ 2238   F422   41 42 41 00     		DB	'ABA',0
+ 2239   F426   42 53 45 54 01  		DB	'BSET',1,2,',X,',2,0
+        F42B   02 2C 58 2C 02 
+        F430   00 
+ 2240   F431   42 43 4C 52 01  		DB	'BCLR',1,2,',X,',2,0
+        F436   02 2C 58 2C 02 
+        F43B   00 
+ 2241   F43C   42 52 53 45 54  		DB	'BRSET',1,2,',X,',2,',',2,0
+  Sun Mar 15 2026 13:59                                                                                                  Page   46
+
+
+
+
+        F441   01 02 2C 58 2C 
+        F446   02 2C 02 00 
+ 2242   F44A   42 52 43 4C 52  		DB	'BRCLR',1,2,',X,',2,',',2,0
+        F44F   01 02 2C 58 2C 
+        F454   02 2C 02 00 
+ 2243                          	
+ 2244   F458   42 52 41 01 05  		DB	'BRA',1,5,0	;2
+        F45D   00 
+ 2245   F45E   42 52 4E 01 05  		DB	'BRN',1,5,0
+        F463   00 
+ 2246   F464   42 48 49 01 05  		DB	'BHI',1,5,0
+        F469   00 
+ 2247   F46A   42 4C 53 01 05  		DB	'BLS',1,5,0
+        F46F   00 
+ 2248   F470   42 43 43 01 05  		DB	'BCC',1,5,0
+        F475   00 
+ 2249   F476   42 43 53 01 05  		DB	'BCS',1,5,0
+        F47B   00 
+ 2250   F47C   42 4E 45 01 05  		DB	'BNE',1,5,0
+        F481   00 
+ 2251   F482   42 45 51 01 05  		DB	'BEQ',1,5,0
+        F487   00 
+ 2252   F488   42 56 43 01 05  		DB	'BVC',1,5,0
+        F48D   00 
+ 2253   F48E   42 56 53 01 05  		DB	'BVS',1,5,0
+        F493   00 
+ 2254   F494   42 50 4C 01 05  		DB	'BPL',1,5,0
+        F499   00 
+ 2255   F49A   42 4D 49 01 05  		DB	'BMI',1,5,0
+        F49F   00 
+ 2256   F4A0   42 47 45 01 05  		DB	'BGE',1,5,0
+        F4A5   00 
+ 2257   F4A6   42 4C 54 01 05  		DB	'BLT',1,5,0
+        F4AB   00 
+ 2258   F4AC   42 47 54 01 05  		DB	'BGT',1,5,0
+        F4B1   00 
+ 2259   F4B2   42 4C 45 01 05  		DB	'BLE',1,5,0
+        F4B7   00 
+ 2260                          	
+ 2261   F4B8   54 53 58 00     		DB	'TSX',0	;3
+ 2262   F4BC   49 4E 53 00     		DB	'INS',0
+ 2263   F4C0   50 55 4C 41 00  		DB	'PULA',0
+ 2264   F4C5   50 55 4C 42 00  		DB	'PULB',0
+ 2265   F4CA   44 45 53 00     		DB	'DES',0
+ 2266   F4CE   54 58 53 00     		DB	'TXS',0
+ 2267   F4D2   50 53 48 41 00  		DB	'PSHA',0
+ 2268   F4D7   50 53 48 42 00  		DB	'PSHB',0
+ 2269   F4DC   50 55 4C 58 00  		DB	'PULX',0
+ 2270   F4E1   52 54 53 00     		DB	'RTS',0
+ 2271   F4E5   41 42 58 00     		DB	'ABX',0
+ 2272   F4E9   52 54 49 00     		DB	'RTI',0
+ 2273   F4ED   50 53 48 58 00  		DB	'PSHX',0
+ 2274   F4F2   4D 55 4C 00     		DB	'MUL',0
+ 2275   F4F6   57 41 49 00     		DB	'WAI',0
+ 2276   F4FA   53 57 49 00     		DB	'SWI',0
+ 2277                          	
+ 2278   F4FE   4E 45 47 41 00  		DB	'NEGA',0	;4
+  Sun Mar 15 2026 13:59                                                                                                  Page   47
+
+
+
+
+ 2279   F503   04 00           		DB	4,0
+ 2280   F505   04 00           		DB	4,0
+ 2281   F507   43 4F 4D 41 00  		DB	'COMA',0
+ 2282   F50C   4C 53 52 41 00  		DB	'LSRA',0
+ 2283   F511   04 00           		DB	4,0
+ 2284   F513   52 4F 52 41 00  		DB	'RORA',0
+ 2285   F518   41 53 52 41 00  		DB	'ASRA',0
+ 2286   F51D   41 53 4C 41 00  		DB	'ASLA',0
+ 2287   F522   52 4F 4C 41 00  		DB	'ROLA',0
+ 2288   F527   44 45 43 41 00  		DB	'DECA',0
+ 2289   F52C   04 00           		DB	4,0
+ 2290   F52E   49 4E 43 41 00  		DB	'INCA',0
+ 2291   F533   54 53 54 41 00  		DB	'TSTA',0
+ 2292   F538   04 00           		DB	4,0
+ 2293   F53A   43 4C 52 41 00  		DB	'CLRA',0
+ 2294                          	
+ 2295   F53F   4E 45 47 42 00  		DB	'NEGB',0	;5
+ 2296   F544   04 00           		DB	4,0
+ 2297   F546   04 00           		DB	4,0
+ 2298   F548   43 4F 4D 42 00  		DB	'COMB',0
+ 2299   F54D   4C 53 52 42 00  		DB	'LSRB',0
+ 2300   F552   04 00           		DB	4,0
+ 2301   F554   52 4F 52 42 00  		DB	'RORB',0
+ 2302   F559   41 53 52 42 00  		DB	'ASRB',0
+ 2303   F55E   41 53 4C 42 00  		DB	'ASLB',0
+ 2304   F563   52 4F 4C 42 00  		DB	'ROLB',0
+ 2305   F568   44 45 43 42 00  		DB	'DECB',0
+ 2306   F56D   04 00           		DB	4,0
+ 2307   F56F   49 4E 43 42 00  		DB	'INCB',0
+ 2308   F574   54 53 54 42 00  		DB	'TSTB',0
+ 2309   F579   04 00           		DB	4,0
+ 2310   F57B   43 4C 52 42 00  		DB	'CLRB',0
+ 2311                          	
+ 2312   F580   4E 45 47 01 02  		DB	'NEG',1,2,',X',0		;6
+        F585   2C 58 00 
+ 2313   F588   04 00           		DB	4,0
+ 2314   F58A   04 00           		DB	4,0
+ 2315   F58C   43 4F 4D 01 02  		DB	'COM',1,2,',X',0
+        F591   2C 58 00 
+ 2316   F594   4C 53 52 01 02  		DB	'LSR',1,2,',X',0
+        F599   2C 58 00 
+ 2317   F59C   04 00           		DB	4,0
+ 2318   F59E   52 4F 52 01 02  		DB	'ROR',1,2,',X',0
+        F5A3   2C 58 00 
+ 2319   F5A6   41 53 52 01 02  		DB	'ASR',1,2,',X',0
+        F5AB   2C 58 00 
+ 2320   F5AE   41 53 4C 01 02  		DB	'ASL',1,2,',X',0
+        F5B3   2C 58 00 
+ 2321   F5B6   52 4F 4C 01 02  		DB	'ROL',1,2,',X',0
+        F5BB   2C 58 00 
+ 2322   F5BE   44 45 43 01 02  		DB	'DEC',1,2,',X',0
+        F5C3   2C 58 00 
+ 2323   F5C6   04 00           		DB	4,0
+ 2324   F5C8   49 4E 43 01 02  		DB	'INC',1,2,',X',0
+        F5CD   2C 58 00 
+ 2325   F5D0   54 53 54 01 02  		DB	'TST',1,2,',X',0
+        F5D5   2C 58 00 
+  Sun Mar 15 2026 13:59                                                                                                  Page   48
+
+
+
+
+ 2326   F5D8   4A 4D 50 01 02  		DB	'JMP',1,2,',X',0
+        F5DD   2C 58 00 
+ 2327   F5E0   43 4C 52 01 02  		DB	'CLR',1,2,',X',0
+        F5E5   2C 58 00 
+ 2328                          	
+ 2329   F5E8   4E 45 47 01 03  		DB	'NEG',1,3,0			;7
+        F5ED   00 
+ 2330   F5EE   04 00           		DB	4,0
+ 2331   F5F0   04 00           		DB	4,0
+ 2332   F5F2   43 4F 4D 01 03  		DB	'COM',1,3,0
+        F5F7   00 
+ 2333   F5F8   4C 53 52 01 03  		DB	'LSR',1,3,0
+        F5FD   00 
+ 2334   F5FE   04 00           		DB	4,0
+ 2335   F600   52 4F 52 01 03  		DB	'ROR',1,3,0
+        F605   00 
+ 2336   F606   41 53 52 01 03  		DB	'ASR',1,3,0
+        F60B   00 
+ 2337   F60C   41 53 4C 01 03  		DB	'ASL',1,3,0
+        F611   00 
+ 2338   F612   52 4F 4C 01 03  		DB	'ROL',1,3,0
+        F617   00 
+ 2339   F618   44 45 43 01 03  		DB	'DEC',1,3,0
+        F61D   00 
+ 2340   F61E   04 00           		DB	4,0
+ 2341   F620   49 4E 43 01 03  		DB	'INC',1,3,0
+        F625   00 
+ 2342   F626   54 53 54 01 03  		DB	'TST',1,3,0
+        F62B   00 
+ 2343   F62C   4A 4D 50 01 03  		DB	'JMP',1,3,0
+        F631   00 
+ 2344   F632   43 4C 52 01 03  		DB	'CLR',1,3,0
+        F637   00 
+ 2345                          	
+ 2346   F638   53 55 42 41 01  		DB	'SUBA',1,'#',2,0		;8
+        F63D   23 02 00 
+ 2347   F640   43 4D 50 41 01  		DB	'CMPA',1,'#',2,0
+        F645   23 02 00 
+ 2348   F648   53 42 43 41 01  		DB	'SBCA',1,'#',2,0
+        F64D   23 02 00 
+ 2349   F650   53 55 42 44 01  		DB	'SUBD',1,'#',3,0
+        F655   23 03 00 
+ 2350   F658   41 4E 44 41 01  		DB	'ANDA',1,'#',2,0
+        F65D   23 02 00 
+ 2351   F660   42 49 54 41 01  		DB	'BITA',1,'#',2,0
+        F665   23 02 00 
+ 2352   F668   4C 44 41 41 01  		DB	'LDAA',1,'#',2,0
+        F66D   23 02 00 
+ 2353   F670   04 00           		DB	4,0
+ 2354   F672   45 4F 52 41 01  		DB	'EORA',1,'#',2,0
+        F677   23 02 00 
+ 2355   F67A   41 44 43 41 01  		DB	'ADCA',1,'#',2,0
+        F67F   23 02 00 
+ 2356   F682   4F 52 41 41 01  		DB	'ORAA',1,'#',2,0
+        F687   23 02 00 
+ 2357   F68A   41 44 44 41 01  		DB	'ADDA',1,'#',2,0
+        F68F   23 02 00 
+  Sun Mar 15 2026 13:59                                                                                                  Page   49
+
+
+
+
+ 2358   F692   43 50 58 01 23  		DB	'CPX',1,'#',3,0
+        F697   03 00 
+ 2359   F699   42 53 52 01 05  		DB	'BSR',1,5,0
+        F69E   00 
+ 2360   F69F   4C 44 53 01 23  		DB	'LDS',1,'#',3,0
+        F6A4   03 00 
+ 2361   F6A6   58 47 44 58 00  		DB	'XGDX',0
+ 2362                          	
+ 2363   F6AB   53 55 42 41 01  		DB	'SUBA',1,2,0		;9
+        F6B0   02 00 
+ 2364   F6B2   43 4D 50 41 01  		DB	'CMPA',1,2,0
+        F6B7   02 00 
+ 2365   F6B9   53 42 43 41 01  		DB	'SBCA',1,2,0
+        F6BE   02 00 
+ 2366   F6C0   53 55 42 44 01  		DB	'SUBD',1,2,0
+        F6C5   02 00 
+ 2367   F6C7   41 4E 44 41 01  		DB	'ANDA',1,2,0
+        F6CC   02 00 
+ 2368   F6CE   42 49 54 41 01  		DB	'BITA',1,2,0
+        F6D3   02 00 
+ 2369   F6D5   4C 44 41 41 01  		DB	'LDAA',1,2,0
+        F6DA   02 00 
+ 2370   F6DC   53 54 41 41 01  		DB	'STAA',1,2,0
+        F6E1   02 00 
+ 2371   F6E3   45 4F 52 41 01  		DB	'EORA',1,2,0
+        F6E8   02 00 
+ 2372   F6EA   41 44 43 41 01  		DB	'ADCA',1,2,0
+        F6EF   02 00 
+ 2373   F6F1   4F 52 41 41 01  		DB	'ORAA',1,2,0
+        F6F6   02 00 
+ 2374   F6F8   41 44 44 41 01  		DB	'ADDA',1,2,0
+        F6FD   02 00 
+ 2375   F6FF   43 50 58 01 02  		DB	'CPX',1,2,0
+        F704   00 
+ 2376   F705   4A 53 52 01 02  		DB	'JSR',1,2,0
+        F70A   00 
+ 2377   F70B   4C 44 53 01 02  		DB	'LDS',1,2,0
+        F710   00 
+ 2378   F711   53 54 53 01 02  		DB	'STS',1,2,0
+        F716   00 
+ 2379                          	
+ 2380   F717   53 55 42 41 01  		DB	'SUBA',1,2,',X',0	;A
+        F71C   02 2C 58 00 
+ 2381   F720   43 4D 50 41 01  		DB	'CMPA',1,2,',X',0
+        F725   02 2C 58 00 
+ 2382   F729   53 42 43 41 01  		DB	'SBCA',1,2,',X',0
+        F72E   02 2C 58 00 
+ 2383   F732   53 55 42 44 01  		DB	'SUBD',1,2,',X',0
+        F737   02 2C 58 00 
+ 2384   F73B   41 4E 44 41 01  		DB	'ANDA',1,2,',X',0
+        F740   02 2C 58 00 
+ 2385   F744   42 49 54 41 01  		DB	'BITA',1,2,',X',0
+        F749   02 2C 58 00 
+ 2386   F74D   4C 44 41 41 01  		DB	'LDAA',1,2,',X',0
+        F752   02 2C 58 00 
+ 2387   F756   53 54 41 41 01  		DB	'STAA',1,2,',X',0
+        F75B   02 2C 58 00 
+  Sun Mar 15 2026 13:59                                                                                                  Page   50
+
+
+
+
+ 2388   F75F   45 4F 52 41 01  		DB	'EORA',1,2,',X',0
+        F764   02 2C 58 00 
+ 2389   F768   41 44 43 41 01  		DB	'ADCA',1,2,',X',0
+        F76D   02 2C 58 00 
+ 2390   F771   4F 52 41 41 01  		DB	'ORAA',1,2,',X',0
+        F776   02 2C 58 00 
+ 2391   F77A   41 44 44 41 01  		DB	'ADDA',1,2,',X',0
+        F77F   02 2C 58 00 
+ 2392   F783   43 50 58 01 02  		DB	'CPX',1,2,',X',0
+        F788   2C 58 00 
+ 2393   F78B   4A 53 52 01 02  		DB	'JSR',1,2,',X',0
+        F790   2C 58 00 
+ 2394   F793   4C 44 53 01 02  		DB	'LDS',1,2,',X',0
+        F798   2C 58 00 
+ 2395   F79B   53 54 53 01 02  		DB	'STS',1,2,',X',0
+        F7A0   2C 58 00 
+ 2396                          	
+ 2397   F7A3   53 55 42 41 01  		DB	'SUBA',1,3,0		;B
+        F7A8   03 00 
+ 2398   F7AA   43 4D 50 41 01  		DB	'CMPA',1,3,0
+        F7AF   03 00 
+ 2399   F7B1   53 42 43 41 01  		DB	'SBCA',1,3,0
+        F7B6   03 00 
+ 2400   F7B8   53 55 42 44 01  		DB	'SUBD',1,3,0
+        F7BD   03 00 
+ 2401   F7BF   41 4E 44 41 01  		DB	'ANDA',1,3,0
+        F7C4   03 00 
+ 2402   F7C6   42 49 54 41 01  		DB	'BITA',1,3,0
+        F7CB   03 00 
+ 2403   F7CD   4C 44 41 41 01  		DB	'LDAA',1,3,0
+        F7D2   03 00 
+ 2404   F7D4   53 54 41 41 01  		DB	'STAA',1,3,0
+        F7D9   03 00 
+ 2405   F7DB   45 4F 52 41 01  		DB	'EORA',1,3,0
+        F7E0   03 00 
+ 2406   F7E2   41 44 43 41 01  		DB	'ADCA',1,3,0
+        F7E7   03 00 
+ 2407   F7E9   4F 52 41 41 01  		DB	'ORAA',1,3,0
+        F7EE   03 00 
+ 2408   F7F0   41 44 44 41 01  		DB	'ADDA',1,3,0
+        F7F5   03 00 
+ 2409   F7F7   43 50 58 01 03  		DB	'CPX',1,3,0
+        F7FC   00 
+ 2410   F7FD   4A 53 52 01 03  		DB	'JSR',1,3,0
+        F802   00 
+ 2411   F803   4C 44 53 01 03  		DB	'LDS',1,3,0
+        F808   00 
+ 2412   F809   53 54 53 01 03  		DB	'STS',1,3,0
+        F80E   00 
+ 2413                          	
+ 2414   F80F   53 55 42 42 01  		DB	'SUBB',1,'#',2,0	;C
+        F814   23 02 00 
+ 2415   F817   43 4D 50 42 01  		DB	'CMPB',1,'#',2,0
+        F81C   23 02 00 
+ 2416   F81F   53 42 43 42 01  		DB	'SBCB',1,'#',2,0
+        F824   23 02 00 
+ 2417   F827   41 44 44 44 01  		DB	'ADDD',1,'#',3,0
+  Sun Mar 15 2026 13:59                                                                                                  Page   51
+
+
+
+
+        F82C   23 03 00 
+ 2418   F82F   41 4E 44 42 01  		DB	'ANDB',1,'#',2,0
+        F834   23 02 00 
+ 2419   F837   42 49 54 42 01  		DB	'BITB',1,'#',2,0
+        F83C   23 02 00 
+ 2420   F83F   4C 44 41 42 01  		DB	'LDAB',1,'#',2,0
+        F844   23 02 00 
+ 2421   F847   04 00           		DB	4,0
+ 2422   F849   45 4F 52 42 01  		DB	'EORB',1,'#',2,0
+        F84E   23 02 00 
+ 2423   F851   41 44 43 42 01  		DB	'ADCB',1,'#',2,0
+        F856   23 02 00 
+ 2424   F859   4F 52 41 42 01  		DB	'ORAB',1,'#',2,0
+        F85E   23 02 00 
+ 2425   F861   41 44 44 42 01  		DB	'ADDB',1,'#',2,0
+        F866   23 02 00 
+ 2426   F869   4C 44 44 01 23  		DB	'LDD',1,'#',3,0
+        F86E   03 00 
+ 2427   F870   08 00           		DB	8,0
+ 2428   F872   4C 44 58 01 23  		DB	'LDX',1,'#',3,0
+        F877   03 00 
+ 2429   F879   53 54 4F 50 00  		DB	'STOP',0
+ 2430                          	
+ 2431   F87E   53 55 42 42 01  		DB	'SUBB',1,2,0		;D
+        F883   02 00 
+ 2432   F885   43 4D 50 42 01  		DB	'CMPB',1,2,0
+        F88A   02 00 
+ 2433   F88C   53 42 43 42 01  		DB	'SBCB',1,2,0
+        F891   02 00 
+ 2434   F893   41 44 44 44 01  		DB	'ADDD',1,2,0
+        F898   02 00 
+ 2435   F89A   41 4E 44 42 01  		DB	'ANDB',1,2,0
+        F89F   02 00 
+ 2436   F8A1   42 49 54 42 01  		DB	'BITB',1,2,0
+        F8A6   02 00 
+ 2437   F8A8   4C 44 41 42 01  		DB	'LDAB',1,2,0
+        F8AD   02 00 
+ 2438   F8AF   53 54 41 42 01  		DB	'STAB',1,2,0
+        F8B4   02 00 
+ 2439   F8B6   45 4F 52 42 01  		DB	'EORB',1,2,0
+        F8BB   02 00 
+ 2440   F8BD   41 44 43 42 01  		DB	'ADCB',1,2,0
+        F8C2   02 00 
+ 2441   F8C4   4F 52 41 42 01  		DB	'ORAB',1,2,0
+        F8C9   02 00 
+ 2442   F8CB   41 44 44 42 01  		DB	'ADDB',1,2,0
+        F8D0   02 00 
+ 2443   F8D2   4C 44 44 01 02  		DB	'LDD',1,2,0
+        F8D7   00 
+ 2444   F8D8   53 54 44 01 02  		DB	'STD',1,2,0
+        F8DD   00 
+ 2445   F8DE   4C 44 58 01 02  		DB	'LDX',1,2,0
+        F8E3   00 
+ 2446   F8E4   53 54 58 01 02  		DB	'STX',1,2,0
+        F8E9   00 
+ 2447                          	
+ 2448   F8EA   53 55 42 42 01  		DB	'SUBB',1,2,',X',0	;E
+  Sun Mar 15 2026 13:59                                                                                                  Page   52
+
+
+
+
+        F8EF   02 2C 58 00 
+ 2449   F8F3   43 4D 50 42 01  		DB	'CMPB',1,2,',X',0
+        F8F8   02 2C 58 00 
+ 2450   F8FC   53 42 43 42 01  		DB	'SBCB',1,2,',X',0
+        F901   02 2C 58 00 
+ 2451   F905   41 44 44 44 01  		DB	'ADDD',1,2,',X',0
+        F90A   02 2C 58 00 
+ 2452   F90E   41 4E 44 42 01  		DB	'ANDB',1,2,',X',0
+        F913   02 2C 58 00 
+ 2453   F917   42 49 54 42 01  		DB	'BITB',1,2,',X',0
+        F91C   02 2C 58 00 
+ 2454   F920   4C 44 41 42 01  		DB	'LDAB',1,2,',X',0
+        F925   02 2C 58 00 
+ 2455   F929   53 54 41 42 01  		DB	'STAB',1,2,',X',0
+        F92E   02 2C 58 00 
+ 2456   F932   45 4F 52 42 01  		DB	'EORB',1,2,',X',0
+        F937   02 2C 58 00 
+ 2457   F93B   41 44 43 42 01  		DB	'ADCB',1,2,',X',0
+        F940   02 2C 58 00 
+ 2458   F944   4F 52 41 42 01  		DB	'ORAB',1,2,',X',0
+        F949   02 2C 58 00 
+ 2459   F94D   41 44 44 42 01  		DB	'ADDB',1,2,',X',0
+        F952   02 2C 58 00 
+ 2460   F956   4C 44 44 01 02  		DB	'LDD',1,2,',X',0
+        F95B   2C 58 00 
+ 2461   F95E   53 54 44 01 02  		DB	'STD',1,2,',X',0
+        F963   2C 58 00 
+ 2462   F966   4C 44 58 01 02  		DB	'LDX',1,2,',X',0
+        F96B   2C 58 00 
+ 2463   F96E   53 54 58 01 02  		DB	'STX',1,2,',X',0
+        F973   2C 58 00 
+ 2464                          	
+ 2465   F976   53 55 42 42 01  		DB	'SUBB',1,3,0		;F
+        F97B   03 00 
+ 2466   F97D   43 4D 50 42 01  		DB	'CMPB',1,3,0
+        F982   03 00 
+ 2467   F984   53 42 43 42 01  		DB	'SBCB',1,3,0
+        F989   03 00 
+ 2468   F98B   41 44 44 44 01  		DB	'ADDD',1,3,0
+        F990   03 00 
+ 2469   F992   41 4E 44 42 01  		DB	'ANDB',1,3,0
+        F997   03 00 
+ 2470   F999   42 49 54 42 01  		DB	'BITB',1,3,0
+        F99E   03 00 
+ 2471   F9A0   4C 44 41 42 01  		DB	'LDAB',1,3,0
+        F9A5   03 00 
+ 2472   F9A7   53 54 41 42 01  		DB	'STAB',1,3,0
+        F9AC   03 00 
+ 2473   F9AE   45 4F 52 42 01  		DB	'EORB',1,3,0
+        F9B3   03 00 
+ 2474   F9B5   41 44 43 42 01  		DB	'ADCB',1,3,0
+        F9BA   03 00 
+ 2475   F9BC   4F 52 41 42 01  		DB	'ORAB',1,3,0
+        F9C1   03 00 
+ 2476   F9C3   41 44 44 42 01  		DB	'ADDB',1,3,0
+        F9C8   03 00 
+ 2477   F9CA   4C 44 44 01 03  		DB	'LDD',1,3,0
+  Sun Mar 15 2026 13:59                                                                                                  Page   53
+
+
+
+
+        F9CF   00 
+ 2478   F9D0   53 54 44 01 03  		DB	'STD',1,3,0
+        F9D5   00 
+ 2479   F9D6   4C 44 58 01 03  		DB	'LDX',1,3,0
+        F9DB   00 
+ 2480   F9DC   53 54 58 01 03  		DB	'STX',1,3,0
+        F9E1   00 
+ 2481                          	
+ 2482   F9E2   2A 2A 2A 2A 2A  	TEXT2:	DB	'*****',0
+        F9E7   00 
+ 2483                          	
+ 2484   F9E8   20 20 20 20 00  	TABST:	DB	'    ',0
+ 2485   F9ED                   	STRING1:
+ 2486   F9ED   09 20 4D 43 20  		DB	'	 MC 68HC11  Disassembler	V 0.2 '
+        F9F2   36 38 48 43 31 
+        F9F7   31 20 20 44 69 
+        F9FC   73 61 73 73 65 
+        FA01   6D 62 6C 65 72 
+        FA06   09 56 20 30 2E 
+        FA0B   32 20 
+ 2487   FA0D   0D 0A           		DB	$D,$A
+ 2488   FA0F   09 20 43 6F 70  		DB	'	 Copyright by Joerg Claassen '
+        FA14   79 72 69 67 68 
+        FA19   74 20 62 79 20 
+        FA1E   4A 6F 65 72 67 
+        FA23   20 43 6C 61 61 
+        FA28   73 73 65 6E 20 
+ 2489   FA2D   0D 0A 0D 0A 00  		DB	$D,$A,$D,$A,$0
+ 2490                          	
+ 2491   FA32                   	STRING2:
+ 2492   FA32   53 74 61 72 74  		DB	'Startadresse: ',0
+        FA37   61 64 72 65 73 
+        FA3C   73 65 3A 20 00 
+ 2493   FA41                   	STRING3:
+ 2494   FA41   09 45 6E 64 61  		DB	'	Endadresse: ',0
+        FA46   64 72 65 73 73 
+        FA4B   65 3A 20 00 
+ 2495                          	
+ 2496                          	
+ 2497   FA4F   8D 9D AD BD     	CALTAB:	DB	$8D,$9D,$AD,$BD		;UNTERPROGRAMM-OPCODES
+ 2498                          	
+ 2499                          	;KOMMANDOTABELLE MIT VEKTOREN
+ 2500                          	
+ 2501   FA53   43              	COMTAB:	DB	'C'
+ 2502   FA54   44              		DB	'D'
+ 2503   FA55   47              		DB	'G'
+ 2504   FA56   48              		DB	'H'
+ 2505   FA57   4C              		DB	'L'
+ 2506   FA58   4D              		DB	'M'
+ 2507   FA59   52              		DB	'R'
+ 2508   FA5A   53              		DB	'S'
+ 2509   FA5B   54              		DB	'T'
+ 2510   FA5C   45              		DB	'E'
+ 2511                          	
+ 2512   FA5D   E55F            	COMVEK:	DW	COPY
+ 2513   FA5F   E241            		DW	DUMP
+ 2514   FA61   E302            		DW	GOTO
+  Sun Mar 15 2026 13:59                                                                                                  Page   54
+
+
+
+
+ 2515   FA63   E12C            		DW	HELP
+ 2516   FA65   E424            		DW	LOAD
+ 2517   FA67   E486            		DW	MEMORY
+ 2518   FA69   E50E            		DW	CPUREG
+ 2519   FA6B   E2E1            		DW	STEP
+ 2520   FA6D   E2F3            		DW	TRACE
+ 2521   FA6F   E9C7            		DW	DISASS
+ 2522                          	
+ 2523                          	;SUBCOMMANDS FUER MEMORY COMMAND
+ 2524                          	
+ 2525   FA71   0D              	MEMTAB:	DB	CR	;MEMORY-COMMAND BEENDEN
+ 2526   FA72   4D              		DB	'M'	;NEUE ADRESSE OEFFNEN
+ 2527   FA73   52              		DB	'R'	;REGISTER OEFFNEN
+ 2528   FA74   54              		DB	'T'	;TEXT EINGABE
+ 2529   FA75   2B              		DB	'+'	;ADR+1 OEFFNEN
+ 2530   FA76   2D              		DB	'-'	;ADR-1 OEFNNEN
+ 2531   FA77   3D              		DB	'='	;GLEICHE ADRESSE OEFFNEN
+ 2532   FA78   27              		DB	$27	;RELATIVES OEFFNEN
+ 2533   FA79   40              		DB	'@'	;ADRESSE INDIREKT OEFFNEN
+ 2534   FA7A   3C              		DB	'<'	;ZURUECK ZU LETZTER ADRESSE NACH @ ODER '
+ 2535   FA7B   3E              		DB	'>'	;8-BIT OFFSET BERECHNEN UND SPEICHERN
+ 2536                          	
+ 2537   FA7C   E50B            	MEMVEK:	DW	MEMEND
+ 2538   FA7E   E747            		DW	NEWADR
+ 2539   FA80   E83B            		DW	CNGREG
+ 2540   FA82   E707            		DW	TXTINP
+ 2541   FA84   E7AF            		DW	NEXTAD
+ 2542   FA86   E7BE            		DW	LASTAD
+ 2543   FA88   E7C5            		DW	SAMEAD
+ 2544   FA8A   E79A            		DW	RELBYT
+ 2545   FA8C   E758            		DW	INDIAD
+ 2546   FA8E   E765            		DW	RESTOR
+ 2547   FA90   E76D            		DW	OFFSET
+ 2548                          	
+ 2549                          	
+ 2550                          	;TABELLE FUER REGISTER ANZEIGE
+ 2551                          	
+ 2552   FA92   53 58 48 49 4E  	FLAGS:	DB	'SXHINZVC',0
+        FA97   5A 56 43 00 
+ 2553                          	
+ 2554   FA9B   46 BD 01        	FREG:	DB	'F',EQUAL,1
+ 2555   FA9E   42 BD 01        	BREG:	DB	'B',EQUAL,1
+ 2556   FAA1   41 BD 01        	AREG:	DB	'A',EQUAL,1
+ 2557   FAA4   58 BD 02        	XREG:	DB	'X',EQUAL,2
+ 2558   FAA7   59 BD 02        	YREG:	DB	'Y',EQUAL,2
+ 2559   FAAA   53 50 BD 00     	SPREG:	DB	'S','P',EQUAL,0
+ 2560   FAAE   50 43 BD 02 FF  	PCREG:	DB	'P','C',EQUAL,2,$FF	;$FF IST DAS LISTENENDE
+ 2561                          	
+ 2562                          	
+ 2563                          	
+ 2564                          	;*******************
+ 2565                          	;	VEKTOREN
+ 2566                          	;*******************
+ 2567                          	
+ 2568                          	
+ 2569   FFD6                   		ORG	$FFD6
+ 2570                          	
+  Sun Mar 15 2026 13:59                                                                                                  Page   55
+
+
+
+
+ 2571   FFD6   9F79            		DW	JSCI	;SCI SERIAL SYSTEM
+ 2572   FFD8   9F7C            		DW	JSPI	;SPI SERIAL TRANSFER COMPLETE
+ 2573   FFDA   9F7F            		DW	JPAIE	;PULSE ACCUMULATOR INPUT EDGE
+ 2574   FFDC   9F82            		DW	JPAO	;PULS ACCUMULATOR OVERFLOW
+ 2575   FFDE   9F85            		DW	JTOF	;TIMER OVERFLOW
+ 2576   FFE0   E15D            		DW	TIMER	;TIMER OUTPUT COMPARE 5
+ 2577   FFE2   9F8B            		DW	JTOC4	;TIMER OUTPUT COMPARE 4
+ 2578   FFE4   9F8E            		DW	JTOC3	;TIMER OUTPUT COMPARE 3
+ 2579   FFE6   9F91            		DW	JTOC2	;TIMER OUTPUT COMPARE 2
+ 2580   FFE8   9F94            		DW	JTOC1	;TIMER OUTPUT COMPARE 1
+ 2581   FFEA   9F97            		DW	JTIC3	;TIMER INPUT CAPTURE 3
+ 2582   FFEC   9F9A            		DW	JTIC2	;TIMER INPUT CAPTURE 2
+ 2583   FFEE   9F9D            		DW	JTIC1	;TIMER INPUT CAPTURE 1
+ 2584   FFF0   9FA0            		DW	JRTI	;REAL TIME INTERRUPT
+ 2585   FFF2   9FA3            		DW	JIRQ	;EXTERNAL PIN OR PARALLEL I/O
+ 2586   FFF4   9FA6            		DW	JXIRQ	;XIRQ PIN (PSEUDO NMI)
+ 2587   FFF6   9FA9            		DW	JSWI	;SWI
+ 2588   FFF8   9FAC            		DW	JTRAP	;ILLEGAL OPCODE TRAP
+ 2589   FFFA   E000            		DW	COLD	;COP FAILURE
+ 2590   FFFC   E000            		DW	COLD	;COP CLOCK MONITOR FAIL
+ 2591   FFFE   E000            		DW	COLD	;RESET
+ 2592                          	
+ 2593   0000                   		END
+ 2593   0000                   		END
+  Sun Mar 15 2026 13:59                                                                                                  Page   56
+
+
+Defined            Symbol Name             Value                References
+
+   98    A                                  9F01      
+  408    ABORT                              E1B1          256
+  460    ABORT1                             E206          450
+ 1959    ACHT                               EB8C         1824
+ 1823    ACHTWEIT                           EAB3         1817
+   73    ADCTL                           =  1030      
+   74    ADR1                            =  1031      
+   75    ADR2                            =  1032      
+   76    ADR3                            =  1033      
+   77    ADR4                            =  1034      
+ 1709    AD_AUS                             EA08         1735   1741
+ 1546    AENDE                              E907         1553   1580
+ 1695    ALT_AD                             E9F1         1693
+ 2556    AREG                               FAA1      
+  564    ASCOUT                             E2CA          562
+ 2069    AT                                 EFDF          780    941
+ 1796    AUSGABE                            EA84         1784   1793   1841   1850   1862   1876   1884   1902   1915
+  129    AUTOBK                             9F18          474    672    725
+  683    AUTOOK                             E3AB          678
+  130    AUTOOP                             9F1A          475    674    727
+   99    B                                  9F02      
+   68    BAUD                            =  102B          227
+  712    BREAK                              E3E2          258
+  735    BREAK0                             E40E          639    721    726
+ 2555    BREG                               FA9E          899
+  466    BRKIT                              E212          461
+ 2083    BRKMSG                             F05F          736
+   15    BS                              =  0008         2063   2063
+ 1164    BUILD                              E6A8         1162
+ 1155    BUILDL                             E69A         1145
+ 1159    BUILDR                             E69E         1148
+  142    BYTECT                             9F27          767    772
+ 1750    BYTE_A                             EA49         1715
+ 2497    CALTAB                             FA4F          647
+  656    CALTST                             E373          649    651    653
+ 2058    CALTXT                             EF7A          656
+   45    CFORC                           =  100B      
+ 1700    CHECK                              E9FB         1687
+ 2066    CHGERR                             EFBA          838
+ 2077    CHRERR                             F01A          500    615    763    857   1466
+ 2074    CKSERR                             F003          790
+  141    CKSUM                              9F26          760    788   1204   1205
+ 1351    CMPOFS                             E7A6         1349
+ 1441    CNG1                               E856         1434
+ 1477    CNG8BR                             E8A2         1475
+ 1430    CNGREG                             E83B         2539
+  Pre    CODE                               9F00           90     95    186   2569
+ 2109    CODTAB                             F114         1525
+  188    COLD                               E000         2589   2590   2591
+ 2501    COMTAB                             FA53          329    335
+ 2512    COMVEK                             FA5D          335    340
+   84    CONFIG                          =  103F      
+  902    CONREG                             E541          918
+  323    CONTRL                             E132          189    336    344    385    451    485    743   1602
+  941    COP01                              E589          937
+  958    COPERR                             E5AB          984
+  Sun Mar 15 2026 13:59                                                                                                  Page   57
+
+
+Defined            Symbol Name             Value                References
+
+   79    COPRST                          =  103A         1654   1656
+  926    COPY                               E55F         2512
+  974    COR                                E5BE          947
+  993    COREND                             E5E6          989
+  979    CORLOP                             E5CD          991
+  951    COV                                E59C      
+  962    COV1                               E5B0          957
+  970    COVEND                             E5BD          929    934    944    966
+  952    COVLOP                             E59F          968
+  878    CPUREG                             E50E         2518
+   16    CR                              =  000D          605   1984   1987   1992   1995   1998   2001   2004   2007   2010   2013
+                                                         2016   2019   2022   2025   2027   2029   2031   2034   2060   2065   2074
+                                                         2080   2083   2086   2089   2525
+ 1638    CTRCOF                             E989          203   1252
+ 1622    CTRCON                             E979          202   1274
+   10    CTRLC                           =  0003          416   1254
+  479    CTRLCA                             E22E          379    664
+ 2086    CTRLCM                             F07D          480
+   11    CTRLQ                           =  0011         1054
+   12    CTRLS                           =  0013         1047
+   13    CTRLT                           =  0014          420
+  429    CTRLTI                             E1D5          421
+  503    D1                                 E252          499
+  201    DASMXB                             E027      
+  Pre    DATA                               0000      
+   41    DDRC                            =  1007      
+   43    DDRD                            =  1009      
+ 1726    DEC_AD                             EA25         1729
+   18    DELETE                          =  007F         1258
+ 2063    DELTXT                             EFB4         1263
+  500    DERR                               E24C          507
+ 1773    DIS                                EA69         1720
+ 1509    DISASM                             E8C8          201   1592   1724   1751
+ 1675    DISASS                             E9C7         2521
+ 1718    DISAUSG                            EA16      
+ 1535    DISEND                             E8F2         1529
+  202    DISMON                             E02A      
+ 1528    DISTST                             E8EA         1533
+  576    DMPEND                             E2E0          567
+  919    DONREG                             E55E      
+ 1864    DREI                               EAE8         1807
+  496    DUMP                               E241         2513
+  510    DUMP1                              E266          574
+  518    DUMP11                             E275          523
+  525    DUMP12                             E283          519
+  526    DUMP2                              E286          535
+  538    DUMP21                             E29B          530
+  539    DUMP22                             E29C          546
+  548    DUMP23                             E2AB          536    542
+  552    DUMP3                              E2B4          556
+  558    DUMP32                             E2BF          553    572
+ 1067    ECHO                               E63D          192    328    658    752    755   1170   1432
+ 1843    EINS                               EAC2         1803
+ 1833    EN)                                EABA      
+  203    ENAMON                             E02D      
+  112    ENDAD                              9F0B         1694   1700   1731
+ 1826    ENDE                               EAB6         1799
+  Sun Mar 15 2026 13:59                                                                                                  Page   58
+
+
+Defined            Symbol Name             Value                References
+
+  898    ENDFLG                             E537          890
+   22    EQUAL                           =  00BD         2554   2555   2556   2557   2558   2559   2560
+ 2094    ERRBEL                             F0C3         1600
+ 2065    ERRMSG                             EFB8          778
+  425    EXIT1                              E1D4          409    435
+  447    EXIT2                              E1F4          417
+  451    EXIT2A                             E1FC          465
+  453    EXIT2B                             E1FF          463
+   97    F                                  9F00          233
+ 2552    FLAGS                              FA92          888
+  895    FLGOUT                             E532          893
+  339    FOUND                              E152          332
+ 1470    FOUNDR                             E891         1439   1451
+ 2554    FREG                               FA9B          880   1389   1445
+ 1886    FUENF                              EB0E         1811
+  602    G0                                 E305          599
+  611    G0A                                E31B          591    609
+  618    G1                                 E327          604
+  627    G2                                 E33A          383    613    623    733
+  641    G2B                                E356          638
+  635    G2C                                E349          632
+  703    G3                                 E3D7          633    688
+  615    GOABOR                             E321          606
+ 2080    GOERR                              F02E          624
+  601    GOTO                               E302         2514
+ 1683    HAUPT                              E9D3         1702   1727   1733   1738
+   31    HC_BOOTER                       =  BF40      
+   30    HC_EEPROM                       =  B600      
+   28    HC_RAM                          =  0000      
+   29    HC_REGS                         =  1000      
+   32    HC_ROM                          =  E000      
+  321    HELP                               E12C         2515
+ 1992    HLPTXT                             EBDF          321
+   81    HPRIO                           =  103C      
+ 1181    IN1HG                              E6BF         1175
+ 1452    INCRP                              E86F         1454
+ 1298    INDIAD                             E758         2545
+ 1184    INERR                              E6C1         1173   1177   1179
+   82    INIT                            =  103D      
+ 1191    INP2HA                             E6C3          196    761    770    817   1214   1217
+ 1214    INP4HX                             E6DE          198    498    506    603    768    801    928    933    943   1287   1316
+                                                         1686   1692
+  196    INPHEX                             E018      
+ 1170    INPHX                              E6A9         1191   1198
+ 1216    INPS4X                             E6E2          822
+  198    INPWOR                             E01E      
+  131    IOWH                               9F1B          298    302    307    310    620   1139   1140   1216   1220
+  132    IOWL                               9F1C         1219
+ 1664    IRQTXT                             E9AD         1660
+  177    JIRQ                               9FA3          253    277   2585
+   19    JMP                             =  007E          235
+  165    JPAIE                              9F7F          241    265   2573
+  166    JPAO                               9F82          242    266   2574
+  176    JRTI                               9FA0          252    276   2584
+  163    JSCI                               9F79          236    257   2571
+  164    JSPI                               9F7C          240    264   2572
+  179    JSWI                               9FA9          237    259   2587
+  Sun Mar 15 2026 13:59                                                                                                  Page   59
+
+
+Defined            Symbol Name             Value                References
+
+  175    JTIC1                              9F9D          251    275   2583
+  174    JTIC2                              9F9A          250    274   2582
+  173    JTIC3                              9F97          249    273   2581
+  172    JTOC1                              9F94          248    272   2580
+  171    JTOC2                              9F91          247    271   2579
+  170    JTOC3                              9F8E          246    270   2578
+  169    JTOC4                              9F8B          245    269   2577
+  168    JTOC5                              9F88          244    268    361
+  167    JTOF                               9F85          243    267   2575
+  180    JTRAP                              9FAC          238    261   2588
+  178    JXIRQ                              9FA6          254    278   2586
+ 1366    LASTAD                             E7BE         2542
+   17    LF                              =  000A         1984   1984   1987   1992   1992   1995   1995   1998   2001   2004   2007
+                                                         2010   2013   2016   2019   2022   2025   2027   2029   2029   2031   2034
+                                                         2060   2065   2074   2080   2083   2086   2089
+  749    LOAD                               E424         2516
+  766    LOAD10                             E44C          762
+  770    LOAD11                             E456          786
+  785    LOAD12                             E477          776
+  788    LOAD15                             E47A          773
+  791    LOAD16                             E482          764
+  792    LOAD17                             E485          757
+  751    LOAD2                              E42A          789
+  752    LOAD3                              E42D          754    759
+  763    LOADER                             E447          769    771
+  122    MAGIC                              9F14          212
+  123    MAGICADDR                          9F16          215
+  857    MCERR                              E4F3      
+  869    MEMEND                             E50B         2537
+  838    MEMERR                             E4D0          828    831   1275
+  798    MEMORY                             E486         2517
+ 2525    MEMTAB                             FA71          848    855
+ 2537    MEMVEK                             FA7C          855    863
+  862    MFOUND                             E4FE          852
+ 1222    NADDR                              E6F0         1215   1218
+ 1392    NAMEF                              E7FB         1404
+ 1207    NBYTE1                             E6DC         1199
+ 1208    NBYTE2                             E6DD         1192
+ 1903    NEG_OFF                            EB30         1892
+ 1292    NEWA99                             E757         1288
+ 1285    NEWADR                             E747         2538
+ 1359    NEXTAD                             E7AF         2541
+ 1753    NEXT_B                             EA50         1757
+  690    NOCALL                             E3B7          646    655    667    681
+  204    NOCOP                              E030      
+  381    NOCTRC                             E192          378
+  217    NOMAGIC                            E042          214
+ 1466    NOREGF                             E888         1459
+ 1652    NORES                              E999          204   1005   1019   1037
+  915    NOTSP                              E558          908
+   47    OC1D                            =  100D      
+   46    OC1M                            =  100C      
+ 1339    OFFS99                             E799         1317
+ 1316    OFFSET                             E76D         2547
+ 1327    OFSER                              E783         1323   1332
+ 2071    OFSERR                             EFE5         1327
+ 1334    OFSOK                              E793         1325
+  Sun Mar 15 2026 13:59                                                                                                  Page   60
+
+
+Defined            Symbol Name             Value                References
+
+  392    OPCERR                             E19C          260
+ 2092    OPCODA                             F0BA      
+ 2090    OPCODI                             F0AC      
+ 2089    OPCODM                             F0A9          398
+ 1416    OPENAD                             E825         1384   1386   1388
+ 1397    OPENR                              E808         1399
+ 1405    OPENRG                             E814         1377
+ 1609    OPNXT                              E96C         1612
+ 1604    OPOK                               E966         1597
+   78    OPTION                          =  1039          219    221
+ 1331    OTST2                              E78B         1321
+ 1142    OUT2H                              E68B          526   1141   1421   1497   1599   1609
+ 1144    OUT2HA                             E68E          197   1754   1859   1870   1873
+ 1141    OUT4H                              E689          311    484
+ 1095    OUTCL                              E657          194    312    441    510    610    635    735    751   1128   1369   1470
+                                                         1675   1676
+ 1087    OUTDM                              E651          521    543
+ 1079    OUTDS                              E64B          516
+ 1133    OUTEND                             E682         1126
+  197    OUTHEX                             E01B      
+ 1088    OUTM                               E653         1087
+ 1080    OUTS                               E64D          195    548    554    898   1079   1114   1115   1422   1500   1595   1610
+ 1125    OUTSTR                             E674          193    283    301    309    322    327    399    481    497    501    505
+                                                          590    602    616    625    657    737    750    779    781    791    799
+                                                          839    858    879    881    927    932    942   1132   1251   1264   1286
+                                                         1328   1431   1467   1486   1661   1679   1684   1690   1881
+  199    OUTWOR                             E021      
+ 1139    OUTX                               E683          199    305    515    742    783   1417   1710   1899   1912
+ 1140    OUTXHI                             E686      
+ 1555    P2                                 E913         1515
+ 1568    P3                                 E92B         1517
+ 1573    P4                                 E934         1519
+   64    PACNT                           =  1027      
+   63    PACTL                           =  1026      
+  Pre    PAGE0                              0000      
+  104    PCH                                9F07      
+  105    PCL                                9F08          228
+  481    PCOUT                              E234          400
+ 2560    PCREG                              FAAE      
+   37    PIOC                            =  1002      
+ 1552    PLUS1                              E910         1539   1541   1543   1545
+   36    PORTA                           =  1000      
+   39    PORTB                           =  1004      
+   38    PORTC                           =  1003      
+   40    PORTCL                          =  1005      
+   42    PORTD                           =  1008      
+   44    PORTE                           =  100A      
+   80    PPROG                           =  103B      
+  194    PRCRLF                             E012         1721
+  193    PRINT                              E00F          680   1601
+ 2034    PROMPT                             EE7D          326
+  195    PRSPAC                             E015      
+ 1587    PSOPC                              E944          636
+  200    QINPUT                             E024      
+ 1411    R8BIT                              E823         1409
+  297    RAMERR                             E104          290    294
+  285    RAMLOP                             E0F1          295
+  Sun Mar 15 2026 13:59                                                                                                  Page   61
+
+
+Defined            Symbol Name             Value                References
+
+ 1987    RAMMS1                             EBC4          300
+   23    RAMSTA                          =  6000          284    304
+ 1019    READ                               E5F8          190   1023   1046   1053   1067   1253   1736
+ 1497    REGBYT                             E8BC         1499
+  889    REGLOP                             E528          896
+ 2056    REGNAM                             EF6A         1430
+ 1484    REGOUT                             E8A4          902   1407   1473
+ 1345    RELBYT                             E79A         2544
+  118    REL_BYH                            9F12         1893   1897   1907   1910
+  120    REL_BYL                            9F13         1894   1906
+ 1308    RESTOR                             E765         2546
+  140    RXDATA                             9F25          424   1028
+  845    SAME                               E4DF          840
+  809    SAMEA                              E49D          802
+ 1369    SAMEAD                             E7C5          810    845    859   1256   1290   1302   1310   1329   1365   1468   2543
+  422    SAVECH                             E1CD          419    431    448
+  866    SCALL                              E505          811    846    860
+   69    SCCR1                           =  102C          223
+   70    SCCR2                           =  102D          225
+   72    SCDR                            =  102F          415   1059
+  139    SCRATW                             9F23         1299   1308   1346
+   71    SCSR                            =  102E          408   1008   1039
+  331    SEACOM                             E146          337
+ 1449    SEARRG                             E868         1464
+  851    SEASC                              E4E9          856
+ 1921    SECHS                              EB48         1820
+ 1819    SECHSWEIT                          EAAD         1813
+ 1984    SELFT                              EBAE          282
+ 1578    SENDE                              E93D         1561
+ 1228    SETBYT                             E6F1          800    844   1370
+ 1239    SETWOR                             E6FC         1410   1476
+  436    SHOWIT                             E1E4          433
+ 1940    SIEBEN                             EB6A         1822
+ 1821    SIEBENWEIT                         EAB0         1815
+   21    SINGLE                          =  0036          696
+ 2060    SORRY                              EF97          679
+   14    SPACE                           =  0020         2063
+   65    SPCR                            =  1028      
+   67    SPDR                            =  102A      
+  106    SPH                                9F09          229    371    381    395    440    469    482    611    618    668    716
+                                                          730    738    882    910   1372   1379   1437   1442   1493   1589
+  107    SPL                                9F0A      
+ 2559    SPREG                              FAAA         1375   1435
+   66    SPSR                            =  1029      
+  159    STACK                              9F78          218    323    372    396    477    717
+  211    START                              E033          188
+  113    STARTAD                            9F0D         1688   1701   1709   1719   1725   1730   1732   1750
+ 1005    STATUS                             E5E7          200   1020   1042   1049
+  584    STEP                               E2E1         2519
+ 1495    STKREG                             E8BA         1492
+  842    STO                                E4D8          832    837
+  834    STOB                               E4C7          821   1337
+  777    STOERR                             E466          960
+ 2485    STRING1                            F9ED         1678
+ 2491    STRING2                            FA32         1683
+ 2493    STRING3                            FA41         1689
+  848    SUBC                               E4E4          804    806    818    823    868
+  Sun Mar 15 2026 13:59                                                                                                  Page   62
+
+
+Defined            Symbol Name             Value                References
+
+  817    SUBCMD                             E4A5          867
+ 1782    SUCHEIN                            EA74         1938   1957   1976
+ 1521    SUCHEN                             E8DF         1566
+  477    SUMONI                             E22A          473
+   20    SWI                             =  003F          637    675
+  143    SYSFLG                             9F28          234    325    356    374    411    423    429    455    471    479    585
+                                                          587    594    596    607    630    643    660    684    686    691    693
+                                                          704    706    719    819   1006   1025   1027   1229   1231   1240   1242
+                                                         1363   1626   1628   1642   1644
+ 2209    TABELLE                            F39E         1779
+ 2144    TABELLE18                          F1A7         1937
+ 2135    TABELLE1A                          F174         1956
+ 2129    TABELLECD                          F154         1975
+ 2484    TABST                              F9E8      
+   48    TCNT                            =  100E          695
+   57    TCTL1                           =  1020      
+   58    TCTL2                           =  1021      
+  385    TENDE                              E199          376
+  190    TERINP                             E006      
+  192    TERIO                              E00C      
+  191    TEROUT                             E009         1419
+   83    TEST1                           =  103E      
+ 2482    TEXT2                              F9E2         1880
+   60    TFLG1                           =  1023          364    699
+   62    TFLG2                           =  1025      
+   49    TIC1                            =  1010      
+   50    TIC2                            =  1012      
+   51    TIC3                            =  1014      
+  356    TIMER                              E15D         2576
+  363    TMINIP                             E16B          360
+   59    TMSK1                           =  1022          365    367    700    702
+   61    TMSK2                           =  1024      
+   52    TOC1                            =  1016      
+   53    TOC2                            =  1018      
+   54    TOC3                            =  101A      
+   55    TOC4                            =  101C      
+   56    TOC5                            =  101E          697
+ 1990    TOMSG                              EBD8          308    504    931
+ 2098    TPAGE2                             F0C6         1557   1928
+ 2105    TPAGE3                             F107         1570   1947
+ 2107    TPAGE4                             F10F         1575   1966
+  593    TRACE                              E2F3         2520
+  666    TRCTST                             E388          663
+ 1115    TRENNO                             E66E         1113
+ 1107    TRENNZ                             E662          522    527    545
+ 1379    TRYCPU                             E7DE         1373
+  361    TUSER                              E168          358
+ 1258    TXTCHK                             E71A         1255
+ 2054    TXTCOP                             EF54          926
+ 2037    TXTDUM                             EE88          496
+ 2039    TXTGOT                             EEA1          601
+ 1253    TXTIN                              E710         1265   1279
+ 1250    TXTINP                             E707         2540
+ 2045    TXTLOA                             EEE5          749
+ 2047    TXTMEM                             EEFE          798   1285
+ 2051    TXTMSG                             EF32         1250
+ 1277    TXTOK                              E741         1271
+  Sun Mar 15 2026 13:59                                                                                                  Page   63
+
+
+Defined            Symbol Name             Value                References
+
+ 1267    TXTOUT                             E72D         1259
+ 2049    TXTREG                             EF1D          878
+ 2043    TXTSGL                             EED7          589
+ 2041    TXTTRC                             EEB9          598
+ 1660    UNIRQ                              E9A6          263
+  880    USRREG                             E514          442   1588
+ 1878    VIER                               EB02         1809
+ 1879    VIERPLUS                           EB03         1919   1930   1949
+ 1918    VIERTEMP                           EB46         1968
+  189    WARM                               E003      
+ 1559    WEITER                             E91A         1563   1571   1576
+ 1039    WR1                                E615         1041
+ 1056    WR2                                E634         1045   1048
+ 1049    WR3                                E628         1052   1055
+ 1037    WRITE                              E611          191    565    895   1069   1071   1073   1081   1089   1097   1099   1129
+                                                         1146   1149   1267   1696   1698   1712   1762   1765   1838   1845   1847
+                                                         1854   1866   1888
+  100    XH                                 9F03      
+  133    XHI                                9F1D          930    936    938    939    946    951    975    988   1374   1381   1383
+                                                         1393   1395   1405   1438   1444   1461   1463   1471
+  101    XL                                 9F04      
+  134    XLO                                9F1E      
+ 2557    XREG                               FAA4      
+  102    YH                                 9F05      
+  135    YHI                                9F1F          503    509    518    525    549    552    573    900    905    913    935
+                                                          940    965    974    978   1376   1392   1396   1436   1446   1449   1460
+                                                         1485   1489
+  103    YL                                 9F06      
+  136    YLO                                9F20      
+ 2558    YREG                               FAA7      
+  115    ZAEHLER                            9F0F         1705   1734   1740
+ 1836    ZEICHEN                            EABA         1801
+  137    ZHI                                9F21          508    529    566    809    824    834    843    945    954    963    976
+                                                          977    981    986   1260   1262   1268   1278   1289   1298   1301   1309
+                                                         1320   1345   1351   1352   1353   1359   1362   1366   1368   1371   1382
+                                                         1406   1416   1420   1472
+  138    ZLO                                9F22      
+  117    ZWAD3                              9F10         1776   1855   1857   1867   1889   1922   1925   1941   1944   1960   1963
+ 1852    ZWEI                               EAD1         1805
+
+
+
+
+           Lines Assembled :  2593             Assembly Errors :  0
+
+
+
