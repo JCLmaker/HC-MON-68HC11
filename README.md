@@ -6,3 +6,10 @@ Inspired by initial experiments with an SBC featuring the HD63701 and software r
 
 The further development was named “HC-MON” and completed in the present version 1.1 in April 1991 in Dublin, Ireland.
 
+Main features of this OS are:
+
+-	Uploading user programs as Motorola s-records
+-	Copy an edit data as needed
+-	Monitor registers
+-	Start, trace and single step user programs
+-	Disassemble user programs 
