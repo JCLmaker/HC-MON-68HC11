@@ -1,0 +1,411 @@
+  Thu Feb  5 2026 12:12                                                                                                  Page    1
+
+
+
+
+
+
+
+               2500 A.D. 68c11 Macro Assembler  -  Version 4.01a
+               -------------------------------------------------
+
+                       Input  Filename : vt.asm
+                       Output Filename : vt.obj
+
+
+    1   0000                   		INCLUDE	EQUS.INC
+    2                          	****** Include-Datei mit Einspruenge in Monitor Unterprogramme ****
+    3                          	
+    4          E000            	COLD	EQU	$E000
+    5          E003            	WARM	EQU	$E003
+    6          E006            	TERINP	EQU	$E006
+    7          E009            	TEROUT	EQU	$E009
+    8          E00C            	TERIO	EQU	$E00C
+    9          E00F            	PRINT	EQU	$E00F
+   10          E012            	PRCRLF	EQU	$E012
+   11          E015            	PRSPAC	EQU	$E015
+   12          E018            	INPHEX	EQU	$E018
+   13          E01B            	OUTHEX	EQU	$E01B
+   14          E01E            	INPWOR	EQU	$E01E
+   15          E021            	OUTWOR	EQU	$E021
+   16          E024            	QINPUT	EQU	$E024
+   17          E027            	DASMXB	EQU	$E027
+   18          E02A            	DISMON	EQU	$E02A
+   19          E02D            	ENAMON	EQU	$E02D
+   20                          	
+   21                          	
+   22                          	
+   23   0000                   		INCLUDE	VT100.INC
+   24                          	*** SET CURSOR POSITION ***
+   25                          	
+   26                          	CURSOR:	.MACRO	ZEILE,SPALTE
+   27                          		LDX	#TEXT#
+   28                          		JSR	PRINT
+   29                          		BRA	RAUS#
+   30                          	TEXT#:	DB	$1B,'[',ZEILE,';',SPALTE,'H',0
+   31                          	RAUS#:
+   32                          		.ENDM
+   33                          	
+   34                          	*** SET SCROLLING REGION ***
+   35                          	
+   36                          	SCROLL:	.MACRO	OBEN,UNTEN
+   37                          		LDX	#TEXT#
+   38                          		JSR	PRINT
+   39                          		BRA	RAUS#
+   40                          	TEXT#:	DB	$1B,'[',OBEN,';',UNTEN,'r',0
+   41                          	RAUS#:
+   42                          		.ENDM
+   43                          	
+   44                          	*** LOESCHEN DES GESAMTEN BILDSCHIRMS ***
+   45                          	
+   46                          	CLS:	.MACRO
+   47                          		LDX	#TEXT#
+  Thu Feb  5 2026 12:12                                                                                                  Page    2
+
+
+
+
+   48                          		JSR	PRINT
+   49                          		BRA	RAUS#
+   50                          	TEXT#:	DB	$1B,'[','2','J'
+   51                          		DB	$1B,'[','H',0
+   52                          	RAUS#:
+   53                          		.ENDM
+   54                          	
+   55                          	*** INVERS EINSCHALTEN ***
+   56                          	
+   57                          	INVON:	.MACRO
+   58                          		LDX	#TEXT#
+   59                          		JSR	PRINT
+   60                          		BRA	RAUS#
+   61                          	TEXT#:	DB	$1B,'[','7','m',0
+   62                          	RAUS#:
+   63                          		.ENDM
+   64                          	
+   65                          	*** INVERS AUSSCHALTEN ***
+   66                          	
+   67                          	INVOFF:	.MACRO
+   68                          		LDX	#TEXT#
+   69                          		JSR	PRINT
+   70                          		BRA	RAUS#
+   71                          	TEXT#:	DB	$1B,'[','0','m',0
+   72                          	RAUS#:
+   73                          		.ENDM
+   74                          	
+   75                          	*** SETZT 132 ZEICHEN/ZEILE *** (NO MSDOS)
+   76                          	
+   77                          	CHR132:	.MACRO
+   78                          		LDX	#TEXT#
+   79                          		JSR	PRINT
+   80                          		BRA	RAUS#
+   81                          	TEXT#:	DB	$1B,'[','?','3','h',0
+   82                          	RAUS#:
+   83                          		.ENDM
+   84                          	
+   85                          	*** SETZT 80 ZEICHEN/ZEILE *** (NO MSDOS)
+   86                          	
+   87                          	CHR80:	.MACRO
+   88                          		LDX	#TEXT#
+   89                          		JSR	PRINT
+   90                          		BRA	RAUS#
+   91                          	TEXT#:	DB	$1B,'[','?','3','l',0
+   92                          	RAUS#:
+   93                          		.ENDM
+   94                          	
+   95                          	*** FETTSCHRIFT EIN ***	(NO MSDOS)
+   96                          	
+   97                          	FETT:	.MACRO
+   98                          		LDX	#TEXT#
+   99                          		JSR	PRINT
+  100                          		BRA	RAUS#
+  101                          	TEXT#:	DB	$1B,'#','6',0
+  102                          	RAUS#:
+  103                          		.ENDM
+  104                          	
+  Thu Feb  5 2026 12:12                                                                                                  Page    3
+
+
+
+
+  105                          	*** CURSOR N ZEILEN ABWAERTS ***
+  106                          	
+  107                          	DOWN:	.MACRO	ANZAHL
+  108                          		LDX	#TEXT#
+  109                          		JSR	PRINT
+  110                          		BRA	RAUS#
+  111                          	TEXT#:	DB	$1B,'[',ANZAHL,'B',0
+  112                          	RAUS#:
+  113                          		.ENDM
+  114                          	
+  115                          	*** CURSOR N ZEILEN AUFWAERTS ***
+  116                          	
+  117                          	UP:	.MACRO	ANZAHL
+  118                          		LDX	#TEXT#
+  119                          		JSR	PRINT
+  120                          		BRA	RAUS#
+  121                          	TEXT#:	DB	$1B,'[',ANZAHL,'A',0
+  122                          	RAUS#:
+  123                          		.ENDM
+  124                          	
+  125                          	*** CURSOR N SPALTEN NACH LINKS ***
+  126                          	
+  127                          	LEFT:	.MACRO	ANZAHL
+  128                          		LDX	#TEXT#
+  129                          		JSR	PRINT
+  130                          		BRA	RAUS#
+  131                          	TEXT#:	DB	$1B,'[',ANZAHL,'D',0
+  132                          	RAUS#:
+  133                          		.ENDM
+  134                          	
+  135                          	*** CURSOR N SPALTEN NACH RECHTS ***
+  136                          	
+  137                          	RIGHT:	.MACRO	ANZAHL
+  138                          		LDX	#TEXT#
+  139                          		JSR	PRINT
+  140                          		BRA	RAUS#
+  141                          	TEXT#:	DB	$1B,'[',ANZAHL,'C',0
+  142                          	RAUS#:
+  143                          		.ENDM
+  144                          	
+  145                          	*** SAVE CURSOR ***
+  146                          	
+  147                          	SAVE:	.MACRO
+  148                          		LDX	#TEXT#
+  149                          		JSR	PRINT
+  150                          		BRA	RAUS#
+  151                          	TEXT#:	DB	$1B,'7',0
+  152                          	RAUS#:
+  153                          		.ENDM
+  154                          	
+  155                          	*** RESTORE CURSOR ***
+  156                          	
+  157                          	RESTORE:.MACRO
+  158                          		LDX	#TEXT#
+  159                          		JSR	PRINT
+  160                          		BRA	RAUS#
+  161                          	TEXT#:	DB	$1B,'8',0
+  Thu Feb  5 2026 12:12                                                                                                  Page    4
+
+
+
+
+  162                          	RAUS#:
+  163                          		.ENDM
+  164                          	
+  165                          	*** LED NUMMER X AN ***
+  166                          	
+  167                          	LED:	.MACRO	NUMMER
+  168                          		LDX	#TEXT#
+  169                          		JSR	PRINT
+  170                          		BRA	RAUS#
+  171                          	TEXT#:	DB	$1B,'[',NUMMER,'q',0
+  172                          	RAUS#:
+  173                          		.ENDM
+  174                          	
+  175                          	*** ALLE LED'S AUS ***
+  176                          	
+  177                          	LED_OFF:.MACRO
+  178                          		LDX	#TEXT#
+  179                          		JSR	PRINT
+  180                          		BRA	RAUS#
+  181                          	TEXT#:	DB	$1B,'[','0','q',0
+  182                          	RAUS#:
+  183                          		.ENDM
+  184                          	
+  185                          	
+  186                          	
+  187   00E0                   		ORG	$E0
+  188                          	
+  189   00E0                   	BUFFER:	DS	$F		;BUFFER FUER CURSOR-POSITION
+  190                          	
+  191   6000                   		ORG	$6000
+  192                          	
+  193   6000   8E 6F 00        	START:	LDS	#$6F00
+  194   6003   BD 60 98        		JSR	INIT_SCREEN
+  195                          	
+  196   6006   CE 60 1A        	MAIN:	LDX	#TEXT
+  197   6009   BD E0 0F        		JSR	PRINT
+  198   600C   BD E0 06        		JSR	TERINP
+  199                          	
+  200   600F   BD 60 67        		JSR	SCREEN2
+  201   6012   BD E0 1E        		JSR	INPWOR
+  202   6015   BD 60 2E        		JSR	SCREEN1
+  203                          	
+  204   6018   20 EC           		BRA	MAIN
+  205                          	
+  206   601A   49 4D 20 45 52  	TEXT:	DB	'IM ERSTEN FENSTER',$0A,$0D,0
+        601F   53 54 45 4E 20 
+        6024   46 45 4E 53 54 
+        6029   45 52 0A 0D 00 
+  207                          	
+  208                          		;SCREEN 1 EINSCHALTEN
+  209   602E                   	SCREEN1:
+  210   602E   CE 60 62        		LDX	#?TEXT
+  211   6031   BD E0 0F        		JSR	PRINT
+  212   6034   CE 00 DF        		LDX	#BUFFER-1
+  213   6037   08              	SCR12:	INX
+  214   6038   BD E0 06        		JSR	TERINP
+  215   603B   A7 00           		STAA	,X
+  Thu Feb  5 2026 12:12                                                                                                  Page    5
+
+
+
+
+  216   603D   81 52           		CMPA	#'R'
+  217   603F   26 F6           		BNE	SCR12
+  218   6041   08              		INX
+  219   6042   4F              		CLRA
+  220   6043   A7 00           		STAA	,X
+  221                          	
+  222   6045                   		SCROLL	'03','13'
+  223   6045   CE 60 4D        		LDX	#TEXT0001
+  224   6048   BD E0 0F        		JSR	PRINT
+  225   604B   20 09           		BRA	RAUS0001
+  226   604D   1B 5B 30 33 3B  	TEXT0001:	DB	$1B,'[','03',';','13','r',0
+        6052   31 33 72 00 
+  227   6056                   	RAUS0001:
+  228   6056                   		.ENDM
+  229   6056                   		RESTORE
+  230   6056   CE 60 5E        		LDX	#TEXT0002
+  231   6059   BD E0 0F        		JSR	PRINT
+  232   605C   20 03           		BRA	RAUS0002
+  233   605E   1B 38 00        	TEXT0002:	DB	$1B,'8',0
+  234   6061                   	RAUS0002:
+  235   6061                   		.ENDM
+  236                          	
+  237   6061   39              		RTS
+  238                          	
+  239   6062   1B 5B 36 6E 00  	?TEXT:	DB	$1B,'[','6','n',0
+  240                          	
+  241                          		;SCREEN 2 EINSCHALTEN
+  242   6067                   	SCREEN2:
+  243   6067                   		SAVE
+  244   6067   CE 60 6F        		LDX	#TEXT0003
+  245   606A   BD E0 0F        		JSR	PRINT
+  246   606D   20 03           		BRA	RAUS0003
+  247   606F   1B 37 00        	TEXT0003:	DB	$1B,'7',0
+  248   6072                   	RAUS0003:
+  249   6072                   		.ENDM
+  250   6072                   		SCROLL	'15','24'
+  251   6072   CE 60 7A        		LDX	#TEXT0004
+  252   6075   BD E0 0F        		JSR	PRINT
+  253   6078   20 09           		BRA	RAUS0004
+  254   607A   1B 5B 31 35 3B  	TEXT0004:	DB	$1B,'[','15',';','24','r',0
+        607F   32 34 72 00 
+  255   6083                   	RAUS0004:
+  256   6083                   		.ENDM
+  257   6083   CE 00 DF        		LDX	#BUFFER-1
+  258   6086   08              	SCR22:	INX
+  259   6087   A6 00           		LDAA	,X
+  260   6089   81 52           		CMPA	#'R'
+  261   608B   26 F9           		BNE	SCR22
+  262   608D   86 48           		LDAA	#'H'
+  263   608F   A7 00           		STAA	,X
+  264                          	
+  265   6091   CE 00 E0        		LDX	#BUFFER
+  266   6094   BD E0 0F        		JSR	PRINT
+  267                          	
+  268   6097   39              		RTS
+  269                          	
+  270                          		;BILDSCHIRM INITIALISIEREN
+  Thu Feb  5 2026 12:12                                                                                                  Page    6
+
+
+
+
+  271   6098                   	INIT_SCREEN:
+  272   6098                   		CLS
+  273   6098   CE 60 A0        		LDX	#TEXT0005
+  274   609B   BD E0 0F        		JSR	PRINT
+  275   609E   20 08           		BRA	RAUS0005
+  276   60A0   1B 5B 32 4A     	TEXT0005:	DB	$1B,'[','2','J'
+  277   60A4   1B 5B 48 00     		DB	$1B,'[','H',0
+  278   60A8                   	RAUS0005:
+  279   60A8                   		.ENDM
+  280   60A8   CE 61 1F        		LDX	#UEBER
+  281   60AB   BD E0 0F        		JSR	PRINT
+  282                          	
+  283   60AE                   	CUR1:	CURSOR	'02','01'
+  284   60AE   CE 60 B6        		LDX	#TEXT0006
+  285   60B1   BD E0 0F        		JSR	PRINT
+  286   60B4   20 09           		BRA	RAUS0006
+  287   60B6   1B 5B 30 32 3B  	TEXT0006:	DB	$1B,'[','02',';','01','H',0
+        60BB   30 31 48 00 
+  288   60BF                   	RAUS0006:
+  289   60BF                   		.ENDM
+  290                          	
+  291   60BF   C6 50           		LDAB	#80
+  292   60C1   86 2D           		LDAA	#'-'
+  293   60C3   BD E0 09        	?LOOP:	JSR	TEROUT
+  294   60C6   5A              		DECB
+  295   60C7   26 FA           		BNE	?LOOP
+  296                          	
+  297   60C9                   	CUR2:	CURSOR	'14','01'
+  298   60C9   CE 60 D1        		LDX	#TEXT0007
+  299   60CC   BD E0 0F        		JSR	PRINT
+  300   60CF   20 09           		BRA	RAUS0007
+  301   60D1   1B 5B 31 34 3B  	TEXT0007:	DB	$1B,'[','14',';','01','H',0
+        60D6   30 31 48 00 
+  302   60DA                   	RAUS0007:
+  303   60DA                   		.ENDM
+  304                          	
+  305   60DA   C6 50           		LDAB	#80
+  306   60DC   86 2D           		LDAA	#'-'
+  307   60DE   BD E0 09        	?LOOP:	JSR	TEROUT
+  308   60E1   5A              		DECB
+  309   60E2   26 FA           		BNE	?LOOP
+  310                          	
+  311   60E4                   		SCROLL	'03','13'
+  312   60E4   CE 60 EC        		LDX	#TEXT0008
+  313   60E7   BD E0 0F        		JSR	PRINT
+  314   60EA   20 09           		BRA	RAUS0008
+  315   60EC   1B 5B 30 33 3B  	TEXT0008:	DB	$1B,'[','03',';','13','r',0
+        60F1   31 33 72 00 
+  316   60F5                   	RAUS0008:
+  317   60F5                   		.ENDM
+  318                          	
+  319   60F5                   		CURSOR	'03','01'
+  320   60F5   CE 60 FD        		LDX	#TEXT0009
+  321   60F8   BD E0 0F        		JSR	PRINT
+  322   60FB   20 09           		BRA	RAUS0009
+  323   60FD   1B 5B 30 33 3B  	TEXT0009:	DB	$1B,'[','03',';','01','H',0
+        6102   30 31 48 00 
+  Thu Feb  5 2026 12:12                                                                                                  Page    7
+
+
+
+
+  324   6106                   	RAUS0009:
+  325   6106                   		.ENDM
+  326                          	
+  327   6106   CC 1B 5B        		LDD	#$1B5B
+  328   6109   FD 00 E0        		STD	BUFFER
+  329   610C   CC 31 35        		LDD	#$3135
+  330   610F   FD 00 E2        		STD	BUFFER+2
+  331   6112   CC 3B 31        		LDD	#$3B31
+  332   6115   FD 00 E4        		STD	BUFFER+4
+  333   6118   CC 52 00        		LDD	#$5200
+  334   611B   FD 00 E6        		STD	BUFFER+6
+  335                          	
+  336   611E   39              		RTS
+  337                          	
+  338   611F   2A 2A 2A 20 42  	UEBER:	DB	'*** BETRIEBSPROGRAMM FUER DIE LINKADAPTER-KARTE ***',0
+        6124   45 54 52 49 45 
+        6129   42 53 50 52 4F 
+        612E   47 52 41 4D 4D 
+        6133   20 46 55 45 52 
+        6138   20 44 49 45 20 
+        613D   4C 49 4E 4B 41 
+        6142   44 41 50 54 45 
+        6147   52 2D 4B 41 52 
+        614C   54 45 20 2A 2A 
+        6151   2A 00 
+  339                          	
+  340   6153                   		END
+
+
+
+           Lines Assembled :  340             Assembly Errors :  0
+
+
+

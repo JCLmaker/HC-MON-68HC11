@@ -1,0 +1,311 @@
+  Fri Feb  6 2026 07:31                                                                                                  Page    1
+
+
+
+
+
+
+
+               2500 A.D. 68c11 Macro Assembler  -  Version 4.01a
+               -------------------------------------------------
+
+                       Input  Filename : uhr.asm
+                       Output Filename : uhr.obj
+
+
+    1                          	;modifiziert 07.02.2026
+    2                          	
+    3                          		;UHR-ROUTINE FUER 68HC11
+    4                          		;8 MHZ
+    5                          		;BETRIEBSSYSTEM BEI $E000
+    6                          		;AUSGABE AUF SERIELLE VT100
+    7                          	
+    8                          	
+    9   0000                   		INCLUDE MAP_HC11.INS
+   10          0000            	HC_RAM		EQU	0		; ON-CHIP-RAM, 256 BYTE
+   11          1000            	HC_REGS 	EQU	$1000		; 64 BYTE REGISTERBLOCK
+   12          B600            	HC_EEPROM	EQU	$B600		; ON-CHIP-EEPROM
+   13          BF40            	HC_BOOTER	EQU	$BF40		; BOOT-ROM
+   14          E000            	HC_ROM		EQU	$E000		; 8K-ROM
+   15                          	
+   16                          	; 64 - BYTE REGISTERBLOCK
+   17                          	
+   18          1000            	PORTA		EQU	$1000
+   19          1002            	PIOC		EQU	$1002
+   20          1003            	PORTC		EQU	$1003
+   21          1004            	PORTB		EQU	$1004
+   22          1005            	PORTCL		EQU	$1005
+   23          1007            	DDRC		EQU	$1007
+   24          1008            	PORTD		EQU	$1008
+   25          1009            	DDRD		EQU	$1009
+   26          100A            	PORTE		EQU	$100A
+   27          100B            	CFORC		EQU	$100B
+   28          100C            	OC1M		EQU	$100C
+   29          100D            	OC1D		EQU	$100D
+   30          100E            	TCNT		EQU	$100E		      ; UND $100F
+   31          1010            	TIC1		EQU	$1010		      ; UND $1011
+   32          1012            	TIC2		EQU	$1012		      ; UND $1013
+   33          1014            	TIC3		EQU	$1014		      ; UND $1015
+   34          1016            	TOC1		EQU	$1016		      ; UND $1017
+   35          1018            	TOC2		EQU	$1018		      ; UND $1019
+   36          101A            	TOC3		EQU	$101A		      ; UND $101B
+   37          101C            	TOC4		EQU	$101C		      ; UND $101D
+   38          101E            	TOC5		EQU	$101E		      ; UND $101F
+   39          1020            	TCTL1		EQU	$1020
+   40          1021            	TCTL2		EQU	$1021
+   41          1022            	TMSK1		EQU	$1022
+   42          1023            	TFLG1		EQU	$1023
+   43          1024            	TMSK2		EQU	$1024
+   44          1025            	TFLG2		EQU	$1025
+   45          1026            	PACTL		EQU	$1026
+   46          1027            	PACNT		EQU	$1027
+   47          1028            	SPCR		EQU	$1028
+  Fri Feb  6 2026 07:31                                                                                                  Page    2
+
+
+
+
+   48          1029            	SPSR		EQU	$1029
+   49          102A            	SPDR		EQU	$102A
+   50          102B            	BAUD		EQU	$102B
+   51          102C            	SCCR1		EQU	$102C
+   52          102D            	SCCR2		EQU	$102D
+   53          102E            	SCSR		EQU	$102E
+   54          102F            	SCDR		EQU	$102F
+   55          1030            	ADCTL		EQU	$1030
+   56          1031            	ADR1		EQU	$1031
+   57          1032            	ADR2		EQU	$1032
+   58          1033            	ADR3		EQU	$1033
+   59          1034            	ADR4		EQU	$1034
+   60          1039            	OPTION		EQU	$1039
+   61          103A            	COPRST		EQU	$103A
+   62          103B            	PPROG		EQU	$103B
+   63          103C            	HPRIO		EQU	$103C
+   64          103D            	INIT		EQU	$103D
+   65          103E            	TEST1		EQU	$103E
+   66          103F            	CONFIG		EQU	$103F
+   67                          	
+   68                          	
+   69                          	
+   70                          	
+   71                          	
+   72          6000            	TIME    EQU     $6000
+   73          001B            	ESC     EQU     $1B
+   74                          	
+   75          E000            	COLD	EQU	$E000
+   76          E003            	WARM	EQU	$E003
+   77          E006            	TERINP	EQU	$E006
+   78          E009            	TEROUT	EQU	$E009
+   79          E00C            	TERIO	EQU	$E00C
+   80          E00F            	PRINT	EQU	$E00F
+   81          E012            	PRCRLF	EQU	$E012
+   82          E015            	PRSPAC	EQU	$E015
+   83          E018            	INPHEX	EQU	$E018
+   84          E01B            	OUTHEX	EQU	$E01B
+   85          E01E            	INPWOR	EQU	$E01E
+   86          E021            	OUTWOR	EQU	$E021
+   87          E024            	QINPUT	EQU	$E024
+   88          E027            	DASMXB	EQU	$E027
+   89          E02A            	DISMON	EQU	$E02A
+   90          E02D            	ENAMON	EQU	$E02D
+   91                          	
+   92          9F7C            	JSPI    EQU     $9F7C
+   93          9F7F            	JPAIE   EQU     $9F7F
+   94          9F82            	JPAO    EQU     $9F82
+   95          9F85            	JTOF    EQU     $9F85
+   96          9F88            	JTOC5   EQU     $9F88
+   97          9F8B            	JTOC4   EQU     $9F8B
+   98          9F8E            	JTOC3   EQU     $9F8E
+   99          9F91            	JTOC2   EQU     $9F91
+  100          9F94            	JTOC1   EQU     $9F94
+  101          9F97            	JTIC3   EQU     $9F97
+  102          9F9A            	JTIC2   EQU     $9F9A
+  103          9F9D            	JTIC1   EQU     $9F9D
+  104          9FA0            	JRTI    EQU     $9FA0
+  Fri Feb  6 2026 07:31                                                                                                  Page    3
+
+
+
+
+  105          9FA3            	JIRQ    EQU     $9FA3
+  106          9FA6            	JXIRQ   EQU     $9FA6
+  107                          	
+  108   6000                   		.ORG    $6000
+  109                          	
+  110   6000   8E 70 00        	START   LDS     #$7000          ;Stack ab $7000
+  111   6003                   		
+  112   6003   CE 61 00        		LDX     #TIMEIRQ        ;IRQ-Vektor umlenken
+  113   6006   FF 9F 89        		STX     JTOC5+1
+  114                          	
+  115   6009   86 00           		LDAA    #$00            ;Speicher fuer Stunde, Minute, Sekunde
+  116   600B   97 FF           		STAA    $FF		;Sekunde
+  117   600D   97 FE           		STAA    $FE		;Minute
+  118   600F   97 FD           		STAA    $FD		;Stunde
+  119                          	
+  120   6011   CE 61 9B        		LDX     #TEXT3
+  121   6014   BD E0 0F        		JSR     PRINT
+  122   6017   CE 61 A5        		LDX     #TEXT4
+  123   601A   BD E0 0F        		JSR     PRINT
+  124                          	
+  125                          	
+  126                          	;Timer-IRQ setzen
+  127                          	;hier stimmt noch etwas nicht?
+  128                          	
+  129                          	;       SWI
+  130                          	
+  131   601D   FC 10 0E        		LDD     TCNT
+  132   6020   C3 60 00        		ADDD    #TIME
+  133   6023   FD 10 1E        		STD     TOC5
+  134   6026   B6 10 22        		LDAA    TMSK1
+  135   6029   8A 08           		ORAA    #%00001000
+  136   602B   B7 10 22        		STAA    TMSK1
+  137   602E   0E              		CLI
+  138   602F                   		
+  139   602F   CE 61 AE        		LDX	#CLS		;gesamten Bildschirm lC6schen
+  140   6032   BD E0 0F        		JSR	PRINT
+  141                          	
+  142   6035   BD E0 12        		JSR	PRCRLF		;nC$chste Zeile
+  143                          	
+  144   6038   CE 00 4F        		LDX     #79             ;80-mal "-" ausgeben
+  145   603B   86 2D           	HEINZ   LDAA    #$2D
+  146   603D   BD E0 09        		JSR     TEROUT
+  147   6040   09              		DEX
+  148   6041   26 F8           		BNE     HEINZ
+  149                          	
+  150   6043   BD E0 12        		JSR	PRCRLF		;Abfrage und Eingabe der Stunde
+  151   6046   BD E0 12        		JSR	PRCRLF
+  152   6049   CE 61 B6        		LDX	#STUNDE
+  153   604C   BD E0 0F        		JSR	PRINT
+  154   604F   BD E0 18        		JSR	INPHEX
+  155   6052   97 FD           		STAA	$FD
+  156                          	
+  157   6054   BD E0 12        		JSR	PRCRLF		;Abfrage und Eingabe der Minute
+  158   6057   BD E0 12        		JSR	PRCRLF
+  159   605A   CE 61 BF        		LDX	#MINUTE
+  160   605D   BD E0 0F        		JSR	PRINT
+  161   6060   BD E0 18        		JSR	INPHEX
+  Fri Feb  6 2026 07:31                                                                                                  Page    4
+
+
+
+
+  162   6063   97 FE           		STAA	$FE
+  163                          	
+  164                          	
+  165   6065   BD E0 12        		JSR	PRCRLF		;Abfrage und Eingabe der Sekunde
+  166   6068   BD E0 12        		JSR	PRCRLF
+  167   606B   CE 61 C8        		LDX	#SEKUNDE
+  168   606E   BD E0 0F        		JSR	PRINT
+  169   6071   BD E0 18        		JSR	INPHEX
+  170   6074   97 FF           		STAA	$FF
+  171   6076                   		
+  172   6076   3F              		SWI
+  173                          	
+  174   6100                   		.ORG    $6100
+  175                          	
+  176   6100   86 08           	TIMEIRQ LDAA    #%00001000
+  177   6102   B7 10 23        		STAA    TFLG1
+  178   6105   FC 10 0E        		LDD     TCNT
+  179   6108   C3 60 00        		ADDD    #TIME
+  180   610B   FD 10 1E        		STD     TOC5
+  181   610E   96 FC           		LDAA    $FC
+  182   6110   27 04           		BEQ     AUSGAB
+  183   6112   4A              		DECA
+  184   6113   97 FC           		STAA    $FC     
+  185   6115   3B              		RTI
+  186                          	
+  187   6116   86 1B           	AUSGAB  LDAA    #ESC
+  188   6118   BD E0 09        		JSR     TEROUT
+  189   611B   86 37           		LDAA    #$37
+  190   611D   BD E0 09        		JSR     TEROUT
+  191   6120   CE 61 8C        		LDX     #TEXT1
+  192   6123   BD E0 0F        		JSR     PRINT
+  193   6126   CE 61 96        		LDX     #TEXT2
+  194   6129   BD E0 0F        		JSR     PRINT
+  195                          	
+  196   612C   C6 59           		LDAB    #$59
+  197   612E   D1 FF           		CMPB    $FF
+  198   6130   26 3E           		BNE     LOOP1
+  199   6132   86 00           		LDAA    #0
+  200   6134   97 FF           		STAA    $00FF
+  201   6136   D1 FE           		CMPB    $FE
+  202   6138   26 3F           		BNE     LOOP2
+  203   613A   86 00           		LDAA    #0
+  204   613C   97 FE           		STAA    $00FE
+  205   613E   C6 23           		LDAB    #$23
+  206   6140   D1 FD           		CMPB    $FD
+  207   6142   26 3E           		BNE     LOOP3
+  208   6144   86 00           		LDAA    #0
+  209   6146   97 FD           		STAA    $00FD
+  210                          	
+  211   6148   96 FD           	AUFI    LDAA    $FD
+  212   614A   BD E0 1B        		JSR     OUTHEX
+  213   614D   86 3A           		LDAA    #$3A
+  214   614F   BD E0 09        		JSR     TEROUT
+  215   6152   96 FE           		LDAA    $FE
+  216   6154   BD E0 1B        		JSR     OUTHEX
+  217   6157   86 3A           		LDAA    #$3A
+  218   6159   BD E0 09        		JSR     TEROUT
+  Fri Feb  6 2026 07:31                                                                                                  Page    5
+
+
+
+
+  219   615C   96 FF           		LDAA    $FF
+  220   615E   BD E0 1B        		JSR     OUTHEX
+  221   6161   86 63           		LDAA    #$63
+  222   6163   97 FC           		STAA    $FC
+  223   6165   86 1B           		LDAA    #ESC
+  224   6167   BD E0 09        		JSR     TEROUT
+  225   616A   86 38           		LDAA    #$38
+  226   616C   BD E0 09        		JSR     TEROUT
+  227   616F   3B              		RTI
+  228                          	
+  229   6170   96 FF           	LOOP1   LDAA    $FF
+  230   6172   8B 01           		ADDA    #1
+  231   6174   19              		DAA
+  232   6175   97 FF           		STAA    $FF
+  233   6177   20 CF           		BRA     AUFI
+  234                          	
+  235   6179   96 FE           	LOOP2   LDAA    $FE
+  236   617B   8B 01           		ADDA    #1
+  237   617D   19              		DAA
+  238   617E   97 FE           		STAA    $FE
+  239   6180   20 C6           		BRA     AUFI
+  240                          	
+  241   6182   96 FD           	LOOP3   LDAA    $FD
+  242   6184   8B 01           		ADDA    #1
+  243   6186   19              		DAA
+  244   6187   97 FD           		STAA    $FD
+  245   6189   20 BD           		BRA     AUFI
+  246                          	
+  247   618B   58              		DB      'X'
+  248   618C   1B 5B 30 31 3B  	TEXT1   DB      $1B,$5B,$30,$31,$3B,$33,$33,$48,$00     ;;set cursor position y=01 x=33
+        6191   33 33 48 00 
+  249   6195   58              		DB      'X'
+  250   6196   1B 23 36 00     	TEXT2   DB      $1B,$23,$36,$00                         ;Fettschrift ein
+  251   619A   58              		DB      'X'
+  252   619B   1B 5B 30 33 3B  	TEXT3   DB      $1B,$5B,$30,$33,$3B,$32,$34,$72,$00     ;set scrolling region oben=03 unten=24
+        61A0   32 34 72 00 
+  253   61A4   58              		DB      'X'
+  254   61A5   1B 5B 30 32 3B  	TEXT4   DB      $1B,$5B,$30,$32,$3B,$30,$31,$48,$00     ;set cursor position y=02 x=01
+        61AA   30 31 48 00 
+  255                          	
+  256   61AE   1B 5B 32 4A 1B  	CLS	DB	$1B,$5B,$32,$4A,$1B,$5B,$48,$00		;gesamten Bildschirm lC6schen
+        61B3   5B 48 00 
+  257                          	
+  258   61B6   53 74 75 6E 64  	STUNDE	DB	'Stunde: ',0
+        61BB   65 3A 20 00 
+  259   61BF   4D 69 6E 75 74  	MINUTE	DB	'Minute: ',0
+        61C4   65 3A 20 00 
+  260   61C8   53 65 6B 75 6E  	SEKUNDE	DB	'Sekunde: ',0
+        61CD   64 65 3A 20 00 
+  261                          	
+  262   61D2                   		.END
+
+
+
+           Lines Assembled :  262             Assembly Errors :  0
+
+
+

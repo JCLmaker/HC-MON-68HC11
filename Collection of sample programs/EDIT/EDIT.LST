@@ -1,0 +1,339 @@
+  Thu Feb  5 2026 22:26                                                                                                  Page    1
+
+
+
+
+
+
+
+               2500 A.D. 68c11 Macro Assembler  -  Version 4.01a
+               -------------------------------------------------
+
+                       Input  Filename : edit.asm
+                       Output Filename : edit.obj
+
+
+    1                          	; Ein Test fC<r eine VT100 Emulation 80x24 Bildschirm
+    2                          	; Berlin, 06.02.2026, ursprC<nglich auch des 90er Jahren
+    3                          	
+    4   6000                   		ORG	$6000		;RAM beginnt bei $6000
+    5                          	
+    6   6000                   		INCLUDE	EQUS.INC
+    7                          	****** Include-Datei mit Einspruenge in Monitor Unterprogramme ****
+    8                          	
+    9                          	; HCMON (68HC11) bei $E000
+   10                          	; Berlin, 06.02.2026
+   11                          	
+   12          E000            	COLD	EQU	$E000
+   13          E003            	WARM	EQU	$E003
+   14          E006            	TERINP	EQU	$E006
+   15          E009            	TEROUT	EQU	$E009
+   16          E00C            	TERIO	EQU	$E00C
+   17          E00F            	PRINT	EQU	$E00F
+   18          E012            	PRCRLF	EQU	$E012
+   19          E015            	PRSPAC	EQU	$E015
+   20          E018            	INPHEX	EQU	$E018
+   21          E01B            	OUTHEX	EQU	$E01B
+   22          E01E            	INPWOR	EQU	$E01E
+   23          E021            	OUTWOR	EQU	$E021
+   24          E024            	QINPUT	EQU	$E024
+   25          E027            	DASMXB	EQU	$E027
+   26          E02A            	DISMON	EQU	$E02A
+   27          E02D            	ENAMON	EQU	$E02D
+   28                          	
+   29                          	
+   30                          	
+   31   6000                   		INCLUDE VT100.INC
+   32                          	*** SET CURSOR POSITION ***
+   33                          	
+   34                          	CURSOR:	.MACRO	ZEILE,SPALTE
+   35                          		LDX	#TEXT#
+   36                          		JSR	PRINT
+   37                          		BRA	RAUS#
+   38                          	TEXT#:	DB	$1B,'[',ZEILE,';',SPALTE,'H',0
+   39                          	RAUS#:
+   40                          		.ENDM
+   41                          	
+   42                          	*** SET SCROLLING REGION ***
+   43                          	
+   44                          	SCROLL:	.MACRO	OBEN,UNTEN
+   45                          		LDX	#TEXT#
+   46                          		JSR	PRINT
+   47                          		BRA	RAUS#
+  Thu Feb  5 2026 22:26                                                                                                  Page    2
+
+
+
+
+   48                          	TEXT#:	DB	$1B,'[',OBEN,';',UNTEN,'r',0
+   49                          	RAUS#:
+   50                          		.ENDM
+   51                          	
+   52                          	*** LOESCHEN DES GESAMTEN BILDSCHIRMS ***
+   53                          	
+   54                          	CLS:	.MACRO
+   55                          		LDX	#TEXT#
+   56                          		JSR	PRINT
+   57                          		BRA	RAUS#
+   58                          	TEXT#:	DB	$1B,'[','2','J'
+   59                          		DB	$1B,'[','H',0
+   60                          	RAUS#:
+   61                          		.ENDM
+   62                          	
+   63                          	*** INVERS EINSCHALTEN ***
+   64                          	
+   65                          	INVON:	.MACRO
+   66                          		LDX	#TEXT#
+   67                          		JSR	PRINT
+   68                          		BRA	RAUS#
+   69                          	TEXT#:	DB	$1B,'[','7','m',0
+   70                          	RAUS#:
+   71                          		.ENDM
+   72                          	
+   73                          	*** INVERS AUSSCHALTEN ***
+   74                          	
+   75                          	INVOFF:	.MACRO
+   76                          		LDX	#TEXT#
+   77                          		JSR	PRINT
+   78                          		BRA	RAUS#
+   79                          	TEXT#:	DB	$1B,'[','0','m',0
+   80                          	RAUS#:
+   81                          		.ENDM
+   82                          	
+   83                          	*** SETZT 132 ZEICHEN/ZEILE *** (NO MSDOS)
+   84                          	
+   85                          	CHR132:	.MACRO
+   86                          		LDX	#TEXT#
+   87                          		JSR	PRINT
+   88                          		BRA	RAUS#
+   89                          	TEXT#:	DB	$1B,'[','?','3','h',0
+   90                          	RAUS#:
+   91                          		.ENDM
+   92                          	
+   93                          	*** SETZT 80 ZEICHEN/ZEILE *** (NO MSDOS)
+   94                          	
+   95                          	CHR80:	.MACRO
+   96                          		LDX	#TEXT#
+   97                          		JSR	PRINT
+   98                          		BRA	RAUS#
+   99                          	TEXT#:	DB	$1B,'[','?','3','l',0
+  100                          	RAUS#:
+  101                          		.ENDM
+  102                          	
+  103                          	*** FETTSCHRIFT EIN ***	(NO MSDOS)
+  104                          	
+  Thu Feb  5 2026 22:26                                                                                                  Page    3
+
+
+
+
+  105                          	FETT:	.MACRO
+  106                          		LDX	#TEXT#
+  107                          		JSR	PRINT
+  108                          		BRA	RAUS#
+  109                          	TEXT#:	DB	$1B,'#','6',0
+  110                          	RAUS#:
+  111                          		.ENDM
+  112                          	
+  113                          	*** CURSOR N ZEILEN ABWAERTS ***
+  114                          	
+  115                          	DOWN:	.MACRO	ANZAHL
+  116                          		LDX	#TEXT#
+  117                          		JSR	PRINT
+  118                          		BRA	RAUS#
+  119                          	TEXT#:	DB	$1B,'[',ANZAHL,'B',0
+  120                          	RAUS#:
+  121                          		.ENDM
+  122                          	
+  123                          	*** CURSOR N ZEILEN AUFWAERTS ***
+  124                          	
+  125                          	UP:	.MACRO	ANZAHL
+  126                          		LDX	#TEXT#
+  127                          		JSR	PRINT
+  128                          		BRA	RAUS#
+  129                          	TEXT#:	DB	$1B,'[',ANZAHL,'A',0
+  130                          	RAUS#:
+  131                          		.ENDM
+  132                          	
+  133                          	*** CURSOR N SPALTEN NACH LINKS ***
+  134                          	
+  135                          	LEFT:	.MACRO	ANZAHL
+  136                          		LDX	#TEXT#
+  137                          		JSR	PRINT
+  138                          		BRA	RAUS#
+  139                          	TEXT#:	DB	$1B,'[',ANZAHL,'D',0
+  140                          	RAUS#:
+  141                          		.ENDM
+  142                          	
+  143                          	*** CURSOR N SPALTEN NACH RECHTS ***
+  144                          	
+  145                          	RIGHT:	.MACRO	ANZAHL
+  146                          		LDX	#TEXT#
+  147                          		JSR	PRINT
+  148                          		BRA	RAUS#
+  149                          	TEXT#:	DB	$1B,'[',ANZAHL,'C',0
+  150                          	RAUS#:
+  151                          		.ENDM
+  152                          	
+  153                          	*** SAVE CURSOR ***
+  154                          	
+  155                          	SAVE:	.MACRO
+  156                          		LDX	#TEXT#
+  157                          		JSR	PRINT
+  158                          		BRA	RAUS#
+  159                          	TEXT#:	DB	$1B,'7',0
+  160                          	RAUS#:
+  161                          		.ENDM
+  Thu Feb  5 2026 22:26                                                                                                  Page    4
+
+
+
+
+  162                          	
+  163                          	*** RESTORE CURSOR ***
+  164                          	
+  165                          	RESTORE:.MACRO
+  166                          		LDX	#TEXT#
+  167                          		JSR	PRINT
+  168                          		BRA	RAUS#
+  169                          	TEXT#:	DB	$1B,'8',0
+  170                          	RAUS#:
+  171                          		.ENDM
+  172                          	
+  173                          	*** LED NUMMER X AN ***
+  174                          	
+  175                          	LED:	.MACRO	NUMMER
+  176                          		LDX	#TEXT#
+  177                          		JSR	PRINT
+  178                          		BRA	RAUS#
+  179                          	TEXT#:	DB	$1B,'[',NUMMER,'q',0
+  180                          	RAUS#:
+  181                          		.ENDM
+  182                          	
+  183                          	*** ALLE LED'S AUS ***
+  184                          	
+  185                          	LED_OFF:.MACRO
+  186                          		LDX	#TEXT#
+  187                          		JSR	PRINT
+  188                          		BRA	RAUS#
+  189                          	TEXT#:	DB	$1B,'[','0','q',0
+  190                          	RAUS#:
+  191                          		.ENDM
+  192                          	
+  193                          	
+  194                          	
+  195                          	*** HAUPTPROGRAMM ***
+  196                          	
+  197   6000   8E 70 00        		LDS	#$7000		;Stack ab $7000
+  198   6003   86 01           		LDAA	#1
+  199   6005   B7 60 D0        		STAA	XPOS		;POSITIONSZAEHLER LOESCHEN
+  200   6008   B7 60 CE        		STAA	YPOS
+  201   600B                   		CLS			;BILDSCHIRM LOESCHEN
+  202   600B   CE 60 13        		LDX	#TEXT0001
+  203   600E   BD E0 0F        		JSR	PRINT
+  204   6011   20 08           		BRA	RAUS0001
+  205   6013   1B 5B 32 4A     	TEXT0001:	DB	$1B,'[','2','J'
+  206   6017   1B 5B 48 00     		DB	$1B,'[','H',0
+  207   601B                   	RAUS0001:
+  208   601B                   		.ENDM
+  209                          	;	SWI			;Breakpoint
+  210   601B   BD E0 06        	INPUT:	JSR	TERINP		;warten Eingabe auf dem Terminal
+  211   601E   81 1B           		CMPA	#$1B		;ESC-Zeichen -> evt. Cursor-Taste, also weiter zu Auswertung
+  212   6020   27 03           		BEQ	WEITER		
+  213   6022   7E 60 AD        		JMP	ZEICHEN
+  214   6025   BD E0 06        	WEITER:	JSR	TERINP		;nC$chstes Zeichen nach ESC
+  215   6028   81 5B           		CMPA	#$5B		;"["-Zeichen
+  216   602A   26 EF           		BNE	INPUT		;nein, also wieder zur Eingabe auf dem Terminal
+  217   602C   BD E0 06        		JSR	TERINP		;nC$chsten Zeichen holen
+  218   602F   81 41           		CMPA	#$41		;"A" ? -> also Pfeil-Taste oben
+  Thu Feb  5 2026 22:26                                                                                                  Page    5
+
+
+
+
+  219   6031   27 0F           		BEQ	OBEN
+  220   6033   81 42           		CMPA	#$42		;"B" ? -> also Pfeil-Taste unten
+  221   6035   27 25           		BEQ	UNTEN
+  222   6037   81 43           		CMPA	#$43		;"C" ? -> also Pfeil-Taste rechts
+  223   6039   27 3D           		BEQ	RECHTS
+  224   603B   81 44           		CMPA	#$44		;"D" ? -> also Pfeil-Taste links
+  225   603D   27 54           		BEQ	LINKS	
+  226   603F   7E 60 1B        		JMP	INPUT
+  227                          	
+  228                          	
+  229   6042   B6 60 CE        	OBEN	LDAA	YPOS
+  230   6045   27 D4           		BEQ	INPUT		;oberste Zeile angekommen?
+  231   6047   4A              		DECA
+  232   6048   B7 60 CE        		STAA	YPOS
+  233   604B   F6 60 D0        		LDAB	XPOS
+  234   604E   CE 60 57        		LDX	#?TEXT
+  235   6051   BD E0 0F        		JSR	PRINT		;Sequenz fC<r Pfeil nach oben ausgeben, Positionen in A und B
+  236   6054   7E 60 1B        		JMP	INPUT		;weiter auf neues Zeichen warten
+  237   6057   1B 5B 31 41 00  	?TEXT	DB	$1B,'[','1','A',0
+  238   605C   B6 60 CE        	UNTEN	LDAA	YPOS
+  239   605F   81 18           		CMPA	#24
+  240   6061   27 B8           		BEQ	INPUT
+  241   6063   4C              		INCA
+  242   6064   B7 60 CE        		STAA	YPOS
+  243   6067   F6 60 D0        		LDAB	XPOS
+  244   606A   CE 60 73        		LDX	#?TEXT
+  245   606D   BD E0 0F        		JSR	PRINT
+  246   6070   7E 60 1B        		JMP	INPUT
+  247   6073   1B 5B 31 42 00  	?TEXT	DB	$1B,'[','1','B',0
+  248   6078   F6 60 D0        	RECHTS	LDAB	XPOS
+  249   607B   C1 50           		CMPB	#80
+  250   607D   27 9C           		BEQ	INPUT
+  251   607F   5C              		INCB
+  252   6080   F7 60 D0        		STAB	XPOS
+  253   6083   B6 60 CE        		LDAA	YPOS
+  254   6086   CE 60 8E        		LDX	#?TEXT
+  255   6089   BD E0 0F        		JSR	PRINT
+  256   608C   20 8D           		BRA	INPUT
+  257   608E   1B 5B 31 43 00  	?TEXT	DB	$1B,'[','1','C',0
+  258   6093   F6 60 D0        	LINKS	LDAB	XPOS
+  259   6096   27 83           		BEQ	INPUT
+  260   6098   5A              		DECB
+  261   6099   F7 60 D0        		STAB	XPOS
+  262   609C   B6 60 CE        		LDAA	YPOS
+  263   609F   CE 60 A8        		LDX	#?TEXT
+  264   60A2   BD E0 0F        		JSR	PRINT
+  265   60A5   7E 60 1B        		JMP	INPUT
+  266   60A8   1B 5B 31 44 00  	?TEXT	DB	$1B,'[','1','D',0
+  267                          	
+  268   60AD   81 20           	ZEICHEN	CMPA	#$20		;Leerzeichen
+  269   60AF   2A 03           		BPL	?W1		;ja, es war mehr als ein Leerzeichen
+  270   60B1   7E 60 1B        		JMP	INPUT	
+  271   60B4   81 7B           	?W1	CMPA	#$7B		;max. bis 7B, dann war ein Zeichen das ausgegeben werden kann
+  272   60B6   2B 03           		BMI	?W2
+  273   60B8   7E 60 1B        		JMP	INPUT
+  274                          	?W2	;LDX	#SETPOS		;x und y Position vor Ausgabe setzten
+  275                          		;JSR	PRINT
+  Thu Feb  5 2026 22:26                                                                                                  Page    6
+
+
+
+
+  276   60BB   BD E0 09        		JSR	TEROUT		;jetzt wir das ASCII-Zeichen ausgeben (Bereich von $21 bis $7A)
+  277   60BE   F6 60 D0        		LDAB	XPOS		;X-Position anpassen bis max. Spalte 80
+  278   60C1   C1 50           		CMPB	#80
+  279   60C3   27 04           		BEQ	?W3
+  280   60C5   5C              		INCB
+  281   60C6   F7 60 D0        		STAB	XPOS
+  282   60C9   7E 60 1B        	?W3	JMP	INPUT		
+  283                          	
+  284   60CC   1B              	SETPOS	DB	$1B		;Sequenz fC<r VT100
+  285   60CD   5B              		DB	'['
+  286   60CE                   	YPOS	DS	1		;Speicher fC<r Y-Position
+  287   60CF   3B              		DB	';'
+  288   60D0                   	XPOS	DS	1		;Speicher fC<r X-Position
+  289   60D1   48              		DB	'H'
+  290   60D2   00              		DB	0
+  291                          	
+  292   60D3                   		END
+
+
+
+           Lines Assembled :  292             Assembly Errors :  0
+
+
+
