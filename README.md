@@ -10,8 +10,8 @@ The further development was named “HC-MON” and completed in the present vers
 
 **Main features of this OS are:**
 
--	Uploading user programs as Motorola s-records
--	Copy an edit data as needed
+-	Uploading user programs in Motorola s-records
+-	Copy and edit data as needed
 -	Monitor registers
 -	Start, trace and single step user programs
 -	Disassemble user programs 
