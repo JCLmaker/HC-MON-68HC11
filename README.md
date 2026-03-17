@@ -23,17 +23,17 @@ The further development was named “HC-MON” and completed in the present vers
 
 ![](docs/pic/Disassembler.png)
 
-**show an change register**
+**show and change register**
 
 
-![](docs/pic/show an change register.png)
+![](docs/pic/register.png)
 
 **load Motorola S-Format**
 
 
-![](docs/pic/load Motorola S-Format.png)
+![](docs/pic/load.png)
 
 **trace program**
 
 
-![](docs/pic/trace program.png)
+![](docs/pic/trace.png)
